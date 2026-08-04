@@ -1,0 +1,4 @@
+# Ignore LibreOffice temp file
+**/.~*
+
+.DS_Store
