@@ -1,0 +1,82 @@
+{
+  "settings": {
+    "focus_duration": 30,
+    "short_break_duration": 10,
+    "long_break_duration": 15,
+    "long_break_interval": 4,
+    "auto_start_breaks": false,
+    "auto_start_pomodoros": false,
+    "sound_enabled": true,
+    "sound_volume": 0.5,
+    "theme": "nordic-fog"
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "title": "Design calm UI components",
+      "category": "Design",
+      "est_pomodoros": 4,
+      "completed_pomodoros": 4,
+      "completed": false,
+      "is_active": false,
+      "created_at": "2026-07-25T09:00:00"
+    },
+    {
+      "id": "t2",
+      "title": "Review system architecture documentation",
+      "category": "Work",
+      "est_pomodoros": 2,
+      "completed_pomodoros": 1,
+      "completed": false,
+      "is_active": false,
+      "created_at": "2026-07-25T09:30:00"
+    },
+    {
+      "id": "t3",
+      "title": "Daily mindfulness meditation & journaling",
+      "category": "Personal",
+      "est_pomodoros": 1,
+      "completed_pomodoros": 1,
+      "completed": true,
+      "is_active": false,
+      "created_at": "2026-07-25T08:00:00"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "s1",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-07-25T09:25:00"
+    },
+    {
+      "id": "s2",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-07-25T10:00:00"
+    },
+    {
+      "id": "s3",
+      "task_id": "t2",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-07-25T10:35:00"
+    },
+    {
+      "id": "s_a3b2224e",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-07-25T11:32:27.994684"
+    },
+    {
+      "id": "s_2834cc37",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-07-25T11:35:56.426347"
+    }
+  ]
+}

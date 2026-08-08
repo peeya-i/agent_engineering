@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ event.title }} | Official Schedule & Speakers</title>
+  <meta name="description" content="{{ event.description }}">
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for UI & LinkedIn -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <nav class="navbar">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+      <a href="/" class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-cloud"></i></div>
+        <div class="brand-title">CloudCon <span>2026</span></div>
+      </a>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="nav-badge">
+          <span class="pulse-dot"></span> 1-Day Live Technical Conference
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <div class="hero-tag"><i class="fa-solid fa-calendar-star"></i> Annual Technical Summit</div>
+      <h1 class="hero-title">CloudCon 2026: <span>Google Cloud Innovations</span></h1>
+      <p class="hero-subtitle">{{ event.tagline }}</p>
+      
+      <!-- Event Quick Meta Cards -->
+      <div class="meta-grid">
+        <div class="meta-card">
+          <div class="meta-icon" style="color:var(--gcp-blue);"><i class="fa-solid fa-calendar-day"></i></div>
+          <div>
+            <div class="meta-label">Conference Date</div>
+            <div class="meta-value">{{ event.date }}</div>
+            <div class="meta-sub">8:30 AM – 5:00 PM {{ event.timezone }}</div>
+          </div>
+        </div>
+
+        <div class="meta-card">
+          <div class="meta-icon" style="color:var(--gcp-cyan);"><i class="fa-solid fa-location-dot"></i></div>
+          <div>
+            <div class="meta-label">Venue & Stream</div>
+            <div class="meta-value">Google Developer Center</div>
+            <div class="meta-sub">San Francisco, CA & Global Stream</div>
+          </div>
+        </div>
+
+        <div class="meta-card">
+          <div class="meta-icon" style="color:var(--gcp-green);"><i class="fa-solid fa-microphone-lines"></i></div>
+          <div>
+            <div class="meta-label">Technical Sessions</div>
+            <div class="meta-value">8 Expert Talks</div>
+            <div class="meta-sub">Max 1-2 Speakers Per Talk</div>
+          </div>
+        </div>
+
+        <div class="meta-card">
+          <div class="meta-icon" style="color:var(--gcp-yellow);"><i class="fa-solid fa-utensils"></i></div>
+          <div>
+            <div class="meta-label">Networking & Lunch</div>
+            <div class="meta-value">60-Min Catered Lunch</div>
+            <div class="meta-sub">12:15 PM – 1:15 PM PST</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="container">
+
+    <!-- Search and Filter Controls -->
+    <section class="filter-section" id="schedule">
+      <div class="search-box-row">
+        <!-- Search Input -->
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search by topic, keyword, or title..." aria-label="Search talks">
+        </div>
+
+        <!-- Category Dropdown Filter -->
+        <select id="categorySelect" class="select-filter" aria-label="Filter by Category">
+          <option value="all">⚡ All Categories</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- Speaker Filter -->
+        <select id="speakerSelect" class="select-filter" aria-label="Filter by Speaker">
+          <option value="all">👤 All Speakers</option>
+          {% for sp in speakers %}
+          <option value="{{ sp.last_name }}">{{ sp.first_name }} {{ sp.last_name }} ({{ sp.company }})</option>
+          {% endfor %}
+        </select>
+
+        <!-- View Mode Toggle -->
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="timeline" title="Timeline View">
+            <i class="fa-solid fa-list"></i> Timeline
+          </button>
+          <button class="view-btn" data-view="grid" title="Grid Card View">
+            <i class="fa-solid fa-border-all"></i> Grid
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Category Pills -->
+      <div class="category-pills">
+        <span class="pill-label">Filter:</span>
+        <button class="pill-btn active" data-category="all">All Topics</button>
+        {% for cat in categories %}
+        <button class="pill-btn" data-category="{{ cat.id }}">{{ cat.name }}</button>
+        {% endfor %}
+        <button id="resetFiltersBtn" class="pill-btn" style="margin-left:auto; color:var(--gcp-red); border-color:rgba(234,67,53,0.3);">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+      </div>
+    </section>
+
+    <!-- Schedule & Timetable Section -->
+    <section>
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fa-solid fa-clock" style="color:var(--gcp-blue);"></i> Conference Schedule
+        </h2>
+        <div class="section-count" id="sessionCount">
+          Showing 8 of 8 technical talks
+        </div>
+      </div>
+
+      <!-- Schedule Container (Timeline / Grid) -->
+      <div id="scheduleContainer" class="timeline-view">
+        {% for item in schedule %}
+          {% if item.type == 'session' %}
+            <!-- Talk Card -->
+            <article class="talk-card" 
+                     data-talk-id="{{ item.id }}"
+                     data-title="{{ item.title }}"
+                     data-category-id="{{ item.category_id }}"
+                     data-category-name="{{ item.category }}"
+                     data-desc="{{ item.description }}"
+                     data-speakers="{% for sp in item.speakers %}{{ sp.first_name }} {{ sp.last_name }} {{ sp.company }} {% endfor %}"
+                     data-room="{{ item.room }}">
+              
+              <!-- Time & Room -->
+              <div class="talk-time-col">
+                <div class="talk-time">
+                  <i class="fa-regular fa-clock"></i> {{ item.time }}
+                </div>
+                <div class="talk-room">
+                  <i class="fa-solid fa-door-open"></i> {{ item.room }}
+                </div>
+              </div>
+
+              <!-- Content & Speakers -->
+              <div class="talk-content-col">
+                <div class="talk-header-row">
+                  <h3 class="talk-title">{{ item.title }}</h3>
+                  <span class="badge badge-{{ item.category_id }}">{{ item.category }}</span>
+                </div>
+                <p class="talk-desc">{{ item.description }}</p>
+
+                <!-- Speakers list (Max 1-2 per talk) -->
+                <div class="talk-speakers">
+                  {% for speaker in item.speakers %}
+                  <div class="speaker-pill">
+                    <div class="speaker-avatar">{{ speaker.avatar_initials }}</div>
+                    <div class="speaker-info">
+                      <span class="speaker-name">{{ speaker.first_name }} {{ speaker.last_name }}</span>
+                      <span class="speaker-company">{{ speaker.role }}, {{ speaker.company }}</span>
+                    </div>
+                    <a href="{{ speaker.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="linkedin-icon-link" title="LinkedIn Profile of {{ speaker.first_name }}">
+                      <i class="fa-brands fa-linkedin"></i>
+                    </a>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </article>
+
+          {% elif item.type == 'lunch' %}
+            <!-- 60-Minute Lunch Break Banner -->
+            <div class="lunch-card">
+              <div class="lunch-icon-large">{{ item.icon }}</div>
+              <div class="lunch-details">
+                <div class="lunch-time-badge">
+                  <i class="fa-solid fa-utensils"></i> {{ item.time }} ({{ item.duration_minutes }} Minutes)
+                </div>
+                <h3 class="lunch-title">{{ item.title }}</h3>
+                <p class="lunch-desc">{{ item.description }}</p>
+              </div>
+            </div>
+
+          {% elif item.type == 'break' %}
+            <!-- Morning / Afternoon Coffee Break -->
+            <div class="break-card">
+              <span class="break-icon">{{ item.icon }}</span>
+              <div>
+                <span class="break-time">{{ item.time }}</span> — 
+                <strong class="break-title">{{ item.title }}</strong>
+                <div class="break-desc">{{ item.description }}</div>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Speaker Directory Section -->
+    <section style="margin-top: 80px;" id="speakers">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fa-solid fa-user-tie" style="color:var(--gcp-cyan);"></i> Featured Speakers
+        </h2>
+        <div class="section-count">
+          {{ speakers|length }} Google Cloud Thought Leaders
+        </div>
+      </div>
+
+      <div class="speakers-grid">
+        {% for speaker in speakers %}
+        <div class="speaker-card">
+          <div class="speaker-card-avatar">{{ speaker.avatar_initials }}</div>
+          <h3 class="speaker-card-name">{{ speaker.first_name }} {{ speaker.last_name }}</h3>
+          <div class="speaker-card-role">{{ speaker.role }}</div>
+          <div class="speaker-card-company">{{ speaker.company }}</div>
+          <p class="speaker-card-bio">{{ speaker.bio }}</p>
+          <a href="{{ speaker.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="linkedin-btn">
+            <i class="fa-brands fa-linkedin"></i> LinkedIn Profile
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Venue & Location Section -->
+    <section style="margin-top: 80px;" id="location">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fa-solid fa-map-location-dot" style="color:var(--gcp-green);"></i> Venue & Location
+        </h2>
+      </div>
+
+      <div class="meta-card" style="padding:32px; display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px;">
+          <div>
+            <h3 style="font-size:1.4rem; font-weight:700; margin-bottom:6px;">Google Developer Center & Tech Auditorium</h3>
+            <p style="color:var(--text-muted); font-size:1rem;">{{ event.address }}</p>
+            <p style="color:var(--text-dim); font-size:0.9rem; margin-top:4px;">Main Entrance: Spear Street Atrium • On-site Parking Available</p>
+          </div>
+          <a href="https://maps.google.com/?q={{ event.address|urlencode }}" target="_blank" rel="noopener noreferrer" class="linkedin-btn" style="background:rgba(66,133,244,0.15); color:#93C5FD; border-color:var(--gcp-blue);">
+            <i class="fa-solid fa-directions"></i> Get Directions
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive Talk Detail Modal Dialog -->
+  <div id="talkModal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-box">
+      <button id="modalClose" class="modal-close" aria-label="Close Dialog">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span id="modalBadge" class="badge badge-ai" style="margin-bottom:12px;">Category</span>
+      <h2 id="modalTitle" style="font-size:1.5rem; font-weight:800; margin-bottom:12px; line-height:1.3;">Talk Title</h2>
+
+      <div style="display:flex; gap:16px; font-size:0.9rem; color:var(--gcp-cyan); margin-bottom:20px;">
+        <span id="modalTime"><i class="fa-regular fa-clock"></i> Time</span>
+        <span id="modalRoom"><i class="fa-solid fa-door-open"></i> Room</span>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <h4 style="font-size:0.85rem; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; letter-spacing:0.05em;">Session Overview</h4>
+        <p id="modalDesc" style="color:var(--text-muted); font-size:0.95rem; line-height:1.6;"></p>
+      </div>
+
+      <div>
+        <h4 style="font-size:0.85rem; text-transform:uppercase; color:var(--text-dim); margin-bottom:12px; letter-spacing:0.05em;">Session Speaker(s)</h4>
+        <div id="modalSpeakers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 CloudCon: Google Cloud Innovations Conference. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#schedule">Schedule</a>
+        <a href="#speakers">Speakers</a>
+        <a href="#location">Venue</a>
+        <a href="/api/talks" target="_blank">JSON API</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript File -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

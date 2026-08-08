@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zen Pomodoro — Serene Focus & Productivity</title>
+
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body data-theme="{{ settings.theme or 'serene-forest' }}">
+
+  <div class="container">
+    
+    <!-- Top Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-spa"></i>
+        </div>
+        <div class="brand-title">
+          Zen <span>Pomodoro</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="settingsBtn" class="icon-btn" title="Timer Settings & Themes">
+          <i class="fa-solid fa-sliders"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid (Timer + Task Panel) -->
+    <main class="main-grid">
+
+      <!-- Left Column: Circular Pomodoro Timer & Ambient Soundscape -->
+      <section class="glass-card timer-container">
+        
+        <!-- Mode Selector Pills -->
+        <div class="mode-pills">
+          <button class="mode-btn active" data-mode="focus">🧘 Focus</button>
+          <button class="mode-btn" data-mode="shortBreak">☕ Short Break</button>
+          <button class="mode-btn" data-mode="longBreak">🌿 Long Break</button>
+        </div>
+
+        <!-- SVG Circular Timer Display -->
+        <div class="timer-display-wrapper">
+          <svg class="progress-ring" width="280" height="280">
+            <circle class="progress-ring-circle-bg" cx="140" cy="140" r="130"></circle>
+            <circle class="progress-ring-circle" cx="140" cy="140" r="130"></circle>
+          </svg>
+
+          <div style="display:flex; flex-direction:column; align-items:center; z-index:2;">
+            <div id="timerDigits" class="timer-digits">25:00</div>
+            <div id="timerStateLabel" class="timer-state-label">Focus Session</div>
+          </div>
+        </div>
+
+        <!-- Timer Controls (Reset, Play/Pause, Skip) -->
+        <div class="timer-controls">
+          <button id="resetBtn" class="control-btn control-btn-secondary" title="Reset Timer">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          
+          <button id="playPauseBtn" class="control-btn control-btn-main" title="Start Focus Session">
+            <i id="playPauseIcon" class="fa-solid fa-play"></i>
+          </button>
+          
+          <button id="skipBtn" class="control-btn control-btn-secondary" title="Skip Session">
+            <i class="fa-solid fa-forward-step"></i>
+          </button>
+        </div>
+
+        <!-- Current Active Task Badge -->
+        <div class="active-task-banner" id="activeTaskBanner">
+          <span class="active-task-dot"></span>
+          <span id="activeTaskTitle">Select a task below to focus on</span>
+        </div>
+
+        <!-- Ambient Sound Controls (Web Audio API) -->
+        <div class="ambient-bar">
+          <button class="ambient-btn" data-sound="rain">
+            <i class="fa-solid fa-cloud-rain"></i> Gentle Rain
+          </button>
+          <button class="ambient-btn" data-sound="wind">
+            <i class="fa-solid fa-wind"></i> Soft Wind
+          </button>
+          <button class="ambient-btn" data-sound="ocean">
+            <i class="fa-solid fa-water"></i> Ocean Waves
+          </button>
+          <button class="ambient-btn" data-sound="binaural">
+            <i class="fa-solid fa-brain"></i> Alpha Beats
+          </button>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Task Manager & Productivity Stats -->
+      <section style="display:flex; flex-direction:column; gap:24px;">
+
+        <!-- Task Management Panel -->
+        <div class="glass-card">
+          <div class="panel-title">
+            <span><i class="fa-solid fa-list-check" style="color:var(--accent-primary);"></i> Focus Tasks</span>
+          </div>
+
+          <!-- Add Task Input Form -->
+          <form id="taskForm" class="task-form">
+            <input type="text" id="taskInput" class="task-input" placeholder="What are you working on?" required>
+            
+            <select id="taskCategorySelect" class="task-select">
+              <option value="Work">Work</option>
+              <option value="Study">Study</option>
+              <option value="Design">Design</option>
+              <option value="Personal">Personal</option>
+            </select>
+
+            <select id="taskEstSelect" class="task-select" title="Target Pomodoro Cycles">
+              <option value="1">1 🍅</option>
+              <option value="2">2 🍅</option>
+              <option value="3">3 🍅</option>
+              <option value="4">4 🍅</option>
+              <option value="5">5 🍅</option>
+            </select>
+
+            <button type="submit" class="add-task-btn" title="Add Task">+</button>
+          </form>
+
+          <!-- Task Items List Container -->
+          <div id="taskList" class="task-list"></div>
+        </div>
+
+        <!-- Daily Productivity Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div id="statFocusMinutes" class="stat-value">{{ stats.total_focus_minutes or 0 }}</div>
+            <div class="stat-label">Focus Mins</div>
+          </div>
+
+          <div class="stat-card">
+            <div id="statSessions" class="stat-value">{{ stats.total_sessions or 0 }}</div>
+            <div class="stat-label">Sessions</div>
+          </div>
+
+          <div class="stat-card">
+            <div id="statCompletedTasks" class="stat-value">{{ stats.completed_tasks or 0 }}</div>
+            <div class="stat-label">Finished</div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Settings & Theme Customization Modal -->
+  <div id="settingsModal" class="modal-overlay">
+    <div class="modal-box">
+      <button id="modalCloseBtn" class="modal-close"><i class="fa-solid fa-xmark"></i></button>
+      
+      <h2 style="font-size:1.3rem; font-weight:700; margin-bottom:20px;">
+        <i class="fa-solid fa-sliders" style="color:var(--accent-primary);"></i> App Settings & Themes
+      </h2>
+
+      <form id="settingsForm">
+        <!-- Timer Durations -->
+        <div class="setting-group">
+          <label class="setting-label">Timer Durations (Minutes)</label>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
+            <div>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Focus</span>
+              <input type="number" id="focusMinsInput" class="task-input" min="1" max="120" value="{{ settings.focus_duration }}">
+            </div>
+            <div>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Short Break</span>
+              <input type="number" id="shortBreakMinsInput" class="task-input" min="1" max="30" value="{{ settings.short_break_duration }}">
+            </div>
+            <div>
+              <span style="font-size:0.75rem; color:var(--text-muted);">Long Break</span>
+              <input type="number" id="longBreakMinsInput" class="task-input" min="1" max="60" value="{{ settings.long_break_duration }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- Serene Aesthetic Themes -->
+        <div class="setting-group">
+          <label class="setting-label">Aesthetic Color Themes</label>
+          <div class="theme-grid">
+            <div class="theme-option active" data-theme="serene-forest">
+              <span style="width:12px; height:12px; border-radius:50%; background:#5EEAD4;"></span> Serene Forest
+            </div>
+            <div class="theme-option" data-theme="nordic-fog">
+              <span style="width:12px; height:12px; border-radius:50%; background:#38BDF8;"></span> Nordic Fog
+            </div>
+            <div class="theme-option" data-theme="sunset-calm">
+              <span style="width:12px; height:12px; border-radius:50%; background:#F472B6;"></span> Sunset Calm
+            </div>
+            <div class="theme-option" data-theme="cherry-blossom">
+              <span style="width:12px; height:12px; border-radius:50%; background:#FB7185;"></span> Cherry Blossom
+            </div>
+            <div class="theme-option" data-theme="midnight-obsidian" style="grid-column:span 2;">
+              <span style="width:12px; height:12px; border-radius:50%; background:#A855F7;"></span> Midnight Obsidian
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="add-task-btn" style="width:100%; padding:12px; margin-top:10px; border-radius:var(--radius-md);">
+          Save Preferences
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Audio Engine & App Scripts -->
+  <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
