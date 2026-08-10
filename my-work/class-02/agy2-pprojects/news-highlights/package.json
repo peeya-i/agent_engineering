@@ -1,0 +1,27 @@
+{
+  "name": "gnews-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to fetch latest news, topic feeds, and search results from Google News",
+  "main": "src/newsService.js",
+  "type": "module",
+  "bin": {
+    "gnews": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js"
+  },
+  "keywords": [
+    "cli",
+    "google-news",
+    "rss",
+    "news"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "open": "^10.1.0",
+    "picocolors": "^1.1.1",
+    "rss-parser": "^3.13.0"
+  }
+}
