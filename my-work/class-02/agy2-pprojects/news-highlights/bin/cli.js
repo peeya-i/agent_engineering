@@ -96,4 +96,19 @@ addSharedOptions(
     })
 );
 
+// Command: Web Server Dashboard
+program
+  .command('serve')
+  .description('Start the Google News Highlights web dashboard using functional templates')
+  .option('-p, --port <number>', 'Port number to listen on', (val) => parseInt(val, 10), 3000)
+  .action((options) => {
+    const port = options.port || 3000;
+    import('../server.js').then(({ server }) => {
+      server.listen(port, () => {
+        console.log(pc.green(`🌐 Google News Highlights Web Server running at http://localhost:${port}`));
+        console.log(pc.dim(`Rendering template directory at: templates/`));
+      });
+    });
+  });
+
 program.parse(process.argv);

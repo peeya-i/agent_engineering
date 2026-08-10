@@ -1,0 +1,14 @@
+# Node dependencies
+node_modules/
+
+# Build distribution output
+dist/
+
+# Python cache & venv
+__pycache__/
+*.pyc
+venv/
+
+# Environment files
+.env
+.DS_Store

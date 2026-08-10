@@ -1,0 +1,29 @@
+<header class="navbar">
+  <div class="logo-container">
+    <div class="logo-icon">📰</div>
+    <div class="logo-text">
+      <h1>Google News <span>Highlights</span></h1>
+      <p class="subtitle">Live Global Headlines & Technology Updates</p>
+    </div>
+  </div>
+
+  <div class="nav-controls">
+    <form id="search-form" class="search-box" action="/search" method="GET">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        name="q" 
+        id="search-input" 
+        placeholder="Search news, topics, tech..." 
+        value="{{SEARCH_QUERY}}" 
+        autocomplete="off"
+      />
+      <button type="submit" class="btn-search">Search</button>
+    </form>
+
+    <div class="status-badge">
+      <span class="pulse-dot"></span>
+      <span>Live Feed</span>
+    </div>
+  </div>
+</header>

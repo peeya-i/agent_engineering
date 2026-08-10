@@ -12,15 +12,22 @@ from storage import (
     record_session, get_stats, get_settings, update_settings
 )
 
-app = Flask(__name__)
+dist_dir = os.path.join(os.path.dirname(__file__), 'dist')
+static_folder = dist_dir if os.path.exists(dist_dir) else 'static'
+template_folder = dist_dir if os.path.exists(dist_dir) else 'templates'
+
+app = Flask(__name__, static_folder=static_folder, template_folder=template_folder, static_url_path='')
 
 @app.route('/')
 def index():
     """Render Zen Pomodoro main single-page application."""
+    if os.path.exists(os.path.join(dist_dir, 'index.html')):
+        return app.send_static_file('index.html')
     tasks = get_all_tasks()
     stats = get_stats()
     settings = get_settings()
     return render_template('index.html', tasks=tasks, stats=stats, settings=settings)
+
 
 # --- Tasks API ---
 

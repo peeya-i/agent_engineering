@@ -1,6 +1,6 @@
 # 🧘 Zen Pomodoro — Serene Productivity Application
 
-A calm, aesthetic, and feature-rich Pomodoro productivity web application built with **Python (Flask)**, **HTML5**, **Vanilla CSS (Glassmorphism & Pastel Themes)**, and **JavaScript (Web Audio API Soundscapes)**.
+A calm, aesthetic, and feature-rich Pomodoro productivity web application built with a modern **Vite + React** frontend framework architecture, **Vanilla CSS (Glassmorphism & Pastel Themes)**, **Web Audio API Soundscapes**, and a **Python (Flask)** REST API backend.
 
 ---
 
@@ -8,11 +8,11 @@ A calm, aesthetic, and feature-rich Pomodoro productivity web application built 
 
 - 🧘 **Customizable Pomodoro Timer**: Switch effortlessly between *Focus* (25 min default), *Short Break* (5 min default), and *Long Break* (15 min default). Includes an SVG circular progress ring and document title countdown.
 - 🎨 **5 Calm Aesthetic Color Themes**: Toggle between *Serene Forest*, *Nordic Fog*, *Sunset Calm*, *Cherry Blossom*, and *Midnight Obsidian*.
-- 🔊 **Procedural Web Audio Ambient Soundscapes**: Built-in sound generator producing *Gentle Rain*, *Soft Wind*, *Ocean Waves*, and *Alpha Focus Beats* directly via the Web Audio API (no external file dependencies).
+- 🔊 **Procedural Web Audio Ambient Soundscapes**: Built-in sound generator producing *Gentle Rain*, *Soft Wind*, *Ocean Waves*, and *Alpha Focus Beats* directly via the Web Audio API.
 - 🔔 **Zen Bowl Completion Chime**: Soft 432 Hz dual sine harmonic chime notification when a focus session completes.
 - 📋 **Task Management & Session Tracking**: Add, categorize (*Work*, *Study*, *Design*, *Personal*), prioritize, and track completed vs target Pomodoro cycles per task (`2 / 4 🍅`).
 - 📊 **Productivity Statistics**: Real-time summary of total focus minutes, completed sessions, and finished tasks stored persistently in a local JSON database.
-- 🧪 **Unit Test Suite**: Full test coverage of routes, storage persistence, CRUD APIs, and settings.
+- ⚛️ **Modern Component Architecture**: Built with Vite, React Context state management (`TaskContext`, `TimerContext`), and modular component rendering.
 
 ---
 
@@ -23,45 +23,50 @@ zen-pomodoro/
 ├── app.py              # Flask server & REST API endpoints
 ├── storage.py          # Data persistence module (data/db.json)
 ├── test_app.py         # Unit test suite
-├── README.md           # Setup & development documentation
-├── data/
-│   └── db.json         # Local persistent data database
-├── templates/
-│   └── index.html      # Single-page application HTML5 layout
-└── static/
-    ├── css/
-    │   └── style.css   # Glassmorphism design system & pastel theme variables
-    └── js/
-        ├── audio.js    # Web Audio API soundscape synth engine & Zen bowl chime
-        └── app.js      # Timer state machine, task manager, stats, & theme controller
+├── package.json        # Frontend dependencies & scripts
+├── vite.config.js      # Vite build & proxy config
+├── frontend/           # Modern React SPA Source Directory
+│   ├── index.html      # Vite HTML entrypoint
+│   └── src/
+│       ├── main.jsx    # React mounting entrypoint
+│       ├── App.jsx     # Main layout container
+│       ├── audio/      # Web Audio API ES module engine
+│       ├── context/    # TimerContext & TaskContext state providers
+│       ├── services/   # REST API client
+│       ├── styles/     # Glassmorphism design system & pastel theme tokens
+│       └── components/ # Reusable UI components (TimerRing, TaskManager, StatsGrid, etc.)
+├── dist/               # Production build output
+└── data/
+    └── db.json         # Local persistent data database
 ```
 
 ---
 
 ## 🚀 Quick Setup & Execution Guide
 
-### Prerequisites
-- **Python 3.8+**
-- **pip** package installer
-
-### Step 1: Navigate to Project Directory
+### Step 1: Install Dependencies
 ```bash
-cd /home/pi-net/Documents/Antigravity/agy2-projects/zen-pomodoro
+npm install
 ```
 
-### Step 2: (Optional) Install Flask
-If Flask is not already installed in your Python environment:
-```bash
-python3 -m pip install flask --target ./vendor
-```
-
-### Step 3: Run the Application
+### Step 2: Run Development Mode (Vite Dev Server + Flask REST API)
+Start the Flask backend:
 ```bash
 python3 app.py
 ```
 
-The application will start running at:
-👉 **`http://127.0.0.1:5001`** (or `http://localhost:5001`)
+In a separate terminal, start Vite frontend HMR:
+```bash
+npm run dev
+```
+👉 Open **`http://localhost:3000`** for live hot-reloading development.
+
+### Step 3: Build for Production
+```bash
+npm run build
+```
+Flask will serve the compiled bundle from `dist/` directly at **`http://127.0.0.1:5001`**.
+
 
 
 ---

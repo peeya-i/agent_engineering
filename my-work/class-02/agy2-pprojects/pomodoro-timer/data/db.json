@@ -16,7 +16,7 @@
       "title": "Design calm UI components",
       "category": "Design",
       "est_pomodoros": 4,
-      "completed_pomodoros": 4,
+      "completed_pomodoros": 7,
       "completed": false,
       "is_active": false,
       "created_at": "2026-07-25T09:00:00"
@@ -77,6 +77,27 @@
       "duration_minutes": 25,
       "type": "focus",
       "timestamp": "2026-07-25T11:35:56.426347"
+    },
+    {
+      "id": "s_e233c9b6",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-08-09T18:56:30.140796"
+    },
+    {
+      "id": "s_764def71",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-08-09T18:56:33.497252"
+    },
+    {
+      "id": "s_7d7d8685",
+      "task_id": "t1",
+      "duration_minutes": 25,
+      "type": "focus",
+      "timestamp": "2026-08-09T18:58:59.721043"
     }
   ]
 }

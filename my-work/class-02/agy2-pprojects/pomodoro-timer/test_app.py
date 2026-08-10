@@ -23,8 +23,8 @@ class ZenPomodoroTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.data.decode('utf-8')
         self.assertIn("Zen Pomodoro", html)
-        self.assertIn("Focus Tasks", html)
-        self.assertIn("Gentle Rain", html)
+        self.assertIn('id="root"', html)
+
 
     def test_tasks_api_crud(self):
         """Test Task creation, retrieval, updating, and deletion."""
