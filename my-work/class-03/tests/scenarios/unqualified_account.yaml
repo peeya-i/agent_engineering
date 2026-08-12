@@ -1,0 +1,29 @@
+name: "unqualified_account"
+description: "An account falling below the minimum employee threshold and operating in an excluded industry."
+
+account:
+  name: "SmallTown Boutique Retailers"
+  industry: "Retail"
+  employee_count: 45
+  region: "North America"
+  notes: "Inquired about point-of-sale inventory software."
+
+objective: "Evaluate account fit against WidgetWare ICP criteria."
+
+evidence:
+  - claim: "Company operates 3 local retail storefronts with 45 total staff."
+    classification: "verified_fact"
+    source:
+      name: "Public Corporate Registry"
+      url: "https://example.com/registry/smalltown-retail"
+      retrieved_at: "2026-08-02"
+    excerpt: "SmallTown Boutique Retailers operates three storefronts employing 45 associates."
+
+expected_assessment:
+  is_fit: false
+  status: "unqualified"
+  disqualification_reasons:
+    - "Below minimum employee scale threshold (45 < 100)"
+    - "Industry is Retail (excluded industry)"
+  requires_human_approval: true
+  outreach_authorized: false

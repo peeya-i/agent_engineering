@@ -1,0 +1,30 @@
+account_fit:
+  min_employee_count: 100
+  preferred_industries:
+    - "Discrete Manufacturing"
+    - "Process Manufacturing"
+    - "Industrial Automation"
+    - "Automotive Component Manufacturing"
+    - "Aerospace Components"
+  excluded_industries:
+    - "Retail"
+    - "Financial Services"
+    - "Pure Software / SaaS"
+    - "Hospitality"
+  preferred_regions:
+    - "North America"
+    - "Western Europe"
+
+buying_signals:
+  - id: "plant_expansion"
+    description: "Announcement of new factory, line addition, or plant expansion."
+  - id: "automation_initiative"
+    description: "Public hiring for OT/IT convergence, smart manufacturing, or IIoT engineers."
+  - id: "legacy_modernization"
+    description: "Mention of replacing legacy SCADA, MES, or paper-based floor tracking."
+
+required_fields:
+  - "name"
+  - "industry"
+  - "employee_count"
+  - "region"

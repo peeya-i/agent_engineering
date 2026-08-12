@@ -1,0 +1,35 @@
+name: "qualified_account"
+description: "A target manufacturing company meeting scale, industry, region, and buying signal criteria."
+
+account:
+  name: "Apex Precision Components Inc."
+  industry: "Discrete Manufacturing"
+  employee_count: 450
+  region: "North America"
+  notes: "Targeting VP of Operations regarding new factory line addition in Ohio."
+
+objective: "Assess target account fit and identify potential product fit for WidgetWare."
+
+evidence:
+  - claim: "Apex Precision opened a new 100,000 sq ft manufacturing plant in Ohio."
+    classification: "verified_fact"
+    source:
+      name: "Industry News Daily"
+      url: "https://example.com/news/apex-plant-expansion"
+      retrieved_at: "2026-08-01"
+    excerpt: "Apex Precision Components announced the opening of a 100,000 sq ft plant extension."
+
+  - claim: "Company is seeking modern floor tracking tools for plant managers."
+    classification: "inference"
+    source:
+      name: "Job Posting"
+      url: "https://example.com/careers/apex-ot-engineer"
+      retrieved_at: "2026-08-05"
+    excerpt: "Hiring Senior OT Systems Engineer to modernize shop floor data collection."
+
+expected_assessment:
+  is_fit: true
+  status: "qualified"
+  recommended_offering: "plant_operations_platform"
+  requires_human_approval: true
+  outreach_authorized: false

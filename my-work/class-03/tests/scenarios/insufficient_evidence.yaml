@@ -1,0 +1,30 @@
+name: "insufficient_evidence"
+description: "An account missing decisive fields (employee count and industry unknown)."
+
+account:
+  name: "Mystery Automation Tech LLC"
+  industry: "unknown"
+  employee_count: null
+  region: "North America"
+  notes: "Lead captured from website form with minimal contact info."
+
+objective: "Determine if account meets ICP requirements."
+
+evidence:
+  - claim: "Company has a contact address in Illinois."
+    classification: "verified_fact"
+    source:
+      name: "Website Contact Page"
+      url: "https://example.com/mystery-tech/contact"
+      retrieved_at: "2026-08-04"
+    excerpt: "Headquartered in Chicago, Illinois."
+
+expected_assessment:
+  is_fit: false
+  status: "insufficient_evidence"
+  missing_fields:
+    - "employee_count"
+    - "industry"
+  requires_human_escalation: true
+  requires_human_approval: true
+  outreach_authorized: false
