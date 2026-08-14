@@ -1,19 +1,21 @@
-account_fit:
-  min_employee_count: 100
-  preferred_industries:
-    - "Discrete Manufacturing"
-    - "Process Manufacturing"
-    - "Industrial Automation"
-    - "Automotive Component Manufacturing"
-    - "Aerospace Components"
-  excluded_industries:
-    - "Retail"
-    - "Financial Services"
-    - "Pure Software / SaaS"
-    - "Hospitality"
-  preferred_regions:
-    - "North America"
-    - "Western Europe"
+minimum_company_size: 100
+
+preferred_industries:
+  - "Discrete Manufacturing"
+  - "Process Manufacturing"
+  - "Industrial Automation"
+  - "Automotive Component Manufacturing"
+  - "Aerospace Components"
+
+excluded_industries:
+  - "Retail"
+  - "Financial Services"
+  - "Pure Software / SaaS"
+  - "Hospitality"
+
+preferred_regions:
+  - "North America"
+  - "Western Europe"
 
 buying_signals:
   - id: "plant_expansion"
@@ -23,8 +25,22 @@ buying_signals:
   - id: "legacy_modernization"
     description: "Mention of replacing legacy SCADA, MES, or paper-based floor tracking."
 
-required_fields:
+required_account_fields:
   - "name"
   - "industry"
   - "employee_count"
   - "region"
+
+account_fit:
+  min_employee_count: 100
+  preferred_industries:
+    - "Discrete Manufacturing"
+    - "Process Manufacturing"
+    - "Industrial Automation"
+  excluded_industries:
+    - "Retail"
+    - "Financial Services"
+    - "Pure Software / SaaS"
+  preferred_regions:
+    - "North America"
+    - "Western Europe"

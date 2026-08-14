@@ -28,14 +28,26 @@ def load_yaml_config(file_path: Path) -> Dict[str, Any]:
         raise ValueError(f"Error parsing YAML file {file_path}: {e}") from e
 
 
-def get_default_config_dir() -> Path:
-    """Locate the default config directory relative to the repository root."""
-    # Assuming layout: my-work/class-03/src/widgetware_sdr/context_builder.py
-    current_file = Path(__file__).resolve()
-    # Go up to class-03 root directory
-    project_root = current_file.parents[2]
-    config_dir = project_root / "config"
-    return config_dir
+def resolve_config_dir(config_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Resolve the directory containing configuration YAML files."""
+    if config_dir is not None:
+        p = Path(config_dir)
+        if not p.exists():
+            raise FileNotFoundError(f"Specified config directory does not exist: {p}")
+        return p
+
+    # Check current working directory config/
+    cwd_config = Path.cwd() / "config"
+    if (cwd_config / "products.yaml").exists():
+        return cwd_config
+
+    # Check relative to module package root
+    file_dir = Path(__file__).resolve()
+    package_root_config = file_dir.parents[2] / "config"
+    if (package_root_config / "products.yaml").exists():
+        return package_root_config
+
+    return cwd_config
 
 
 def build_context(
@@ -62,10 +74,7 @@ def build_context(
         FileNotFoundError: If any required YAML config file is missing.
         ValueError: If configuration or input formats are invalid.
     """
-    if config_dir is None:
-        target_config_dir = get_default_config_dir()
-    else:
-        target_config_dir = Path(config_dir)
+    target_config_dir = resolve_config_dir(config_dir)
 
     # 1. Load Business Configurations (Products, ICP, Policies)
     products_path = target_config_dir / "products.yaml"
@@ -79,8 +88,6 @@ def build_context(
     # Validate essential YAML fields
     if "company" not in products_data or "offerings" not in products_data:
         raise ValueError("products.yaml missing required 'company' or 'offerings' sections.")
-    if "account_fit" not in icp_data:
-        raise ValueError("icp.yaml missing required 'account_fit' section.")
     if "evidence_classifications" not in policies_data:
         raise ValueError("policies.yaml missing required 'evidence_classifications' section.")
 

@@ -1,6 +1,8 @@
 company:
   name: "WidgetWare"
-  description: "WidgetWare provides industrial software and modern automation services that enable manufacturing and industrial-automation companies to modernize plant operations and adopt AI-enabled automation."
+  description: "WidgetWare provides industrial software and modern automation services that help manufacturing and industrial-automation companies modernize plant operations and adopt AI-enabled automation."
+
+company_description: "WidgetWare provides industrial software and modern automation services that help manufacturing and industrial-automation companies modernize plant operations and adopt AI-enabled automation."
 
 offerings:
   - id: "plant_operations_platform"
@@ -34,3 +36,9 @@ offerings:
     prohibited_claims:
       - "Eliminates all human quality control inspectors."
       - "Guarantees specific ROI percentages before pilot completion."
+
+products:
+  - id: "plant_operations_platform"
+    name: "Plant Operations Platform"
+  - id: "industrial_ai_accelerator"
+    name: "Industrial AI Accelerator"
