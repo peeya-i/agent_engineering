@@ -1,46 +1,32 @@
-minimum_company_size: 100
+minimum_employee_count: 5000
+maximum_employee_count: null
 
 preferred_industries:
-  - "Discrete Manufacturing"
-  - "Process Manufacturing"
-  - "Industrial Automation"
-  - "Automotive Component Manufacturing"
-  - "Aerospace Components"
+  - manufacturing
+  - industrial_automation
+  - automotive_manufacturing
+  - electronics_manufacturing
+  - industrial_equipment
 
 excluded_industries:
-  - "Retail"
-  - "Financial Services"
-  - "Pure Software / SaaS"
-  - "Hospitality"
+  - consumer_retail
+  - restaurants
+  - personal_services
 
 preferred_regions:
-  - "North America"
-  - "Western Europe"
+  - united_states
+  - europe
+  - india
 
 buying_signals:
-  - id: "plant_expansion"
-    description: "Announcement of new factory, line addition, or plant expansion."
-  - id: "automation_initiative"
-    description: "Public hiring for OT/IT convergence, smart manufacturing, or IIoT engineers."
-  - id: "legacy_modernization"
-    description: "Mention of replacing legacy SCADA, MES, or paper-based floor tracking."
+  - new_ai_leadership
+  - digital_transformation_program
+  - plant_modernization
+  - genai_hiring
+  - manufacturing_data_initiative
 
-required_account_fields:
-  - "name"
-  - "industry"
-  - "employee_count"
-  - "region"
-
-account_fit:
-  min_employee_count: 100
-  preferred_industries:
-    - "Discrete Manufacturing"
-    - "Process Manufacturing"
-    - "Industrial Automation"
-  excluded_industries:
-    - "Retail"
-    - "Financial Services"
-    - "Pure Software / SaaS"
-  preferred_regions:
-    - "North America"
-    - "Western Europe"
+required_fields:
+  - company_name
+  - industry
+  - employee_count
+  - region

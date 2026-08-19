@@ -1,47 +1,17 @@
-# Class 3 Acceptance Criteria
+# Class 3 Acceptance Criteria Checklist
 
-This document defines the acceptance criteria for the Class 3 WidgetWare SDR Context Package.
-
----
-
-## 1. Configuration & Structure Requirements
-
-- [x] `config/products.yaml` exists and defines at least two WidgetWare product offerings (`plant_operations_platform`, `industrial_ai_accelerator`).
-- [x] `config/icp.yaml` defines numeric minimum company scale, preferred/excluded industries, target regions, and required fields.
-- [x] `config/policies.yaml` specifies 5 evidence classifications (`verified_fact`, `derived_fact`, `inference`, `unknown`, `conflict`), prohibited actions, human approval requirements, and prompt injection policies.
-
----
-
-## 2. Context Model & Layer Separation
-
-- [x] The context builder (`src/widgetware_sdr/context_builder.py`) returns a dictionary with 5 separate layers:
-  1. `system_instructions`
-  2. `business_context`
-  3. `task_context`
-  4. `retrieved_evidence`
-  5. `state`
-- [x] System instructions are loaded from `src/widgetware_sdr/instructions.py` (`get_system_instructions()`).
-- [x] Account details and user notes are placed strictly in `task_context`.
-- [x] Input dictionaries are not mutated during context construction.
-- [x] Missing configuration files trigger clear errors.
-
----
-
-## 3. Policy & Safety Guardrails
-
-- [x] External outreach (email, social messages) is strictly prohibited.
-- [x] CRM modification is strictly prohibited without human approval.
-- [x] Missing account fields are preserved as unknown and trigger `insufficient_evidence` policy.
-- [x] Account notes containing prompt injection attempts cannot modify system instructions or safety policies.
-
----
-
-## 4. Testing & Verification
-
-- [x] Automated unit test suite `tests/unit/test_context_builder.py` passes via `python -m pytest -v`.
-- [x] All 4 required scenario fixtures exist in `tests/scenarios/`:
-  - `qualified_account.yaml`
-  - `unqualified_account.yaml`
-  - `insufficient_evidence.yaml`
-  - `prompt_injection.yaml`
-- [x] All scenario tests pass.
+| Category | Observable Condition | Status |
+|---|---|:---:|
+| **Configuration** | `config/products.yaml` exists, loads valid YAML, defines $\ge 2$ offerings and approved claims | ✅ |
+| **Configuration** | `config/icp.yaml` exists, defines numeric `minimum_employee_count`, preferred & excluded industries | ✅ |
+| **Configuration** | `config/policies.yaml` exists, specifies 5 evidence classifications, prohibits CRM edits/messages, requires human approval | ✅ |
+| **Documentation** | `docs/widgetware-business-brief.md` and `docs/acceptance-criteria.md` exist and provide accurate context | ✅ |
+| **Instructions** | `src/widgetware_sdr/instructions.py` exports `get_system_instructions()` with stable, observable safety rules | ✅ |
+| **Context Builder** | `src/widgetware_sdr/context_builder.py` returns 5 separate context layers without mutating inputs | ✅ |
+| **Context Builder** | Missing configuration files raise explicit `FileNotFoundError` | ✅ |
+| **Provenance** | Evidence records retain source metadata, retrieval date, and classifications | ✅ |
+| **Unknowns** | Missing account fields remain unknown and are never hallucinated or invented | ✅ |
+| **Security & Safety** | Untrusted account notes cannot override system instructions or policies (prompt injection defense) | ✅ |
+| **Scenarios** | 4 scenario fixtures exist in `tests/scenarios/` (Qualified, Unqualified, Insufficient Evidence, Prompt Injection) | ✅ |
+| **Testing** | All unit and scenario tests in `tests/unit/test_context_builder.py` pass cleanly | ✅ |
+| **Scope Boundaries** | No Google ADK agent, no LLM API calls, no web scraping, no CRM/email side-effects | ✅ |

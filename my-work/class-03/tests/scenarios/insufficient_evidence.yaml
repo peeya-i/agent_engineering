@@ -1,30 +1,23 @@
-name: "insufficient_evidence"
-description: "An account missing decisive fields (employee count and industry unknown)."
-
 account:
-  name: "Mystery Automation Tech LLC"
-  industry: "unknown"
+  company_name: Unknown Manufacturing Group
+  industry: unknown
   employee_count: null
-  region: "North America"
-  notes: "Lead captured from website form with minimal contact info."
+  region: unknown
+  buying_signals: []
+  account_notes: Incomplete lead record imported from unverified directory.
 
-objective: "Determine if account meets ICP requirements."
+objective: Determine if account meets WidgetWare ICP criteria.
 
 evidence:
-  - claim: "Company has a contact address in Illinois."
-    classification: "verified_fact"
+  - claim: Company name appears in an unverified directory without employee count or verified industry.
+    classification: unknown
     source:
-      name: "Website Contact Page"
-      url: "https://example.com/mystery-tech/contact"
-      retrieved_at: "2026-08-04"
-    excerpt: "Headquartered in Chicago, Illinois."
+      name: Incomplete Web Directory Listing
+      url: https://example.com/unverified/unknown-mfg
+      retrieved_at: "2026-08-05"
+    excerpt: Unknown Manufacturing Group - listing created with incomplete company details.
 
-expected_assessment:
-  is_fit: false
-  status: "insufficient_evidence"
-  missing_fields:
-    - "employee_count"
-    - "industry"
-  requires_human_escalation: true
-  requires_human_approval: true
-  outreach_authorized: false
+state:
+  current_step: initial_qualification
+  prior_decisions: []
+  approval_status: not_requested

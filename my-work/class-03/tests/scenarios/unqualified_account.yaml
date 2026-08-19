@@ -1,29 +1,23 @@
-name: "unqualified_account"
-description: "An account falling below the minimum employee threshold and operating in an excluded industry."
-
 account:
-  name: "SmallTown Boutique Retailers"
-  industry: "Retail"
-  employee_count: 45
-  region: "North America"
-  notes: "Inquired about point-of-sale inventory software."
+  company_name: Corner Market Bodega
+  industry: consumer_retail
+  employee_count: 350
+  region: united_states
+  buying_signals: []
+  account_notes: Local convenience store operator seeking retail POS upgrades.
 
-objective: "Evaluate account fit against WidgetWare ICP criteria."
+objective: Evaluate suitability for WidgetWare enterprise industrial platform.
 
 evidence:
-  - claim: "Company operates 3 local retail storefronts with 45 total staff."
-    classification: "verified_fact"
+  - claim: Corner Market operates small neighborhood convenience stores.
+    classification: verified_fact
     source:
-      name: "Public Corporate Registry"
-      url: "https://example.com/registry/smalltown-retail"
-      retrieved_at: "2026-08-02"
-    excerpt: "SmallTown Boutique Retailers operates three storefronts employing 45 associates."
+      name: Local Business Directory
+      url: https://example.com/directory/corner-market
+      retrieved_at: "2026-08-01"
+    excerpt: Corner Market is a chain of 12 retail convenience stores in the Tri-State area.
 
-expected_assessment:
-  is_fit: false
-  status: "unqualified"
-  disqualification_reasons:
-    - "Below minimum employee scale threshold (45 < 100)"
-    - "Industry is Retail (excluded industry)"
-  requires_human_approval: true
-  outreach_authorized: false
+state:
+  current_step: initial_qualification
+  prior_decisions: []
+  approval_status: not_requested

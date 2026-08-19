@@ -1,35 +1,33 @@
-name: "qualified_account"
-description: "A target manufacturing company meeting scale, industry, region, and buying signal criteria."
-
 account:
-  name: "Apex Precision Components Inc."
-  industry: "Discrete Manufacturing"
-  employee_count: 450
-  region: "North America"
-  notes: "Targeting VP of Operations regarding new factory line addition in Ohio."
+  company_name: Apex Industrial Systems
+  industry: industrial_automation
+  employee_count: 12000
+  region: united_states
+  buying_signals:
+    - plant_modernization
+    - new_ai_leadership
+  account_notes: Evaluating enterprise plant modernization across 14 manufacturing sites.
 
-objective: "Assess target account fit and identify potential product fit for WidgetWare."
+objective: Assess account qualification against WidgetWare ICP and prepare SDR briefing.
 
 evidence:
-  - claim: "Apex Precision opened a new 100,000 sq ft manufacturing plant in Ohio."
-    classification: "verified_fact"
+  - claim: Apex Industrial Systems announced a $50M plant-modernization program.
+    classification: verified_fact
     source:
-      name: "Industry News Daily"
-      url: "https://example.com/news/apex-plant-expansion"
-      retrieved_at: "2026-08-01"
-    excerpt: "Apex Precision Components announced the opening of a 100,000 sq ft plant extension."
+      name: Apex Industrial Press Release
+      url: https://example.com/press/apex-modernization
+      retrieved_at: "2026-08-07"
+    excerpt: Apex Industrial announced a multi-year $50M investment into plant-floor digital modernization.
 
-  - claim: "Company is seeking modern floor tracking tools for plant managers."
-    classification: "inference"
+  - claim: Appointed new VP of Industrial AI to oversee smart factory initiatives.
+    classification: verified_fact
     source:
-      name: "Job Posting"
-      url: "https://example.com/careers/apex-ot-engineer"
-      retrieved_at: "2026-08-05"
-    excerpt: "Hiring Senior OT Systems Engineer to modernize shop floor data collection."
+      name: Industry Trade Journal
+      url: https://example.com/news/apex-new-vp-ai
+      retrieved_at: "2026-08-10"
+    excerpt: Dr. Marcus Vance joins Apex as Vice President of Industrial AI and Automation.
 
-expected_assessment:
-  is_fit: true
-  status: "qualified"
-  recommended_offering: "plant_operations_platform"
-  requires_human_approval: true
-  outreach_authorized: false
+state:
+  current_step: initial_qualification
+  prior_decisions: []
+  approval_status: pending
