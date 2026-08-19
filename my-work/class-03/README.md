@@ -80,17 +80,24 @@ python -m pytest -v
 
 ### Expected Test Output:
 ```text
-tests/unit/test_starter.py::test_starter_environment PASSED                           [ 11%]
-tests/unit/test_context_builder.py::test_config_files_exist_and_load PASSED             [ 22%]
-tests/unit/test_context_builder.py::test_policies_contain_required_boundaries PASSED    [ 33%]
-tests/unit/test_context_builder.py::test_evidence_classifications_present PASSED         [ 44%]
-tests/unit/test_context_builder.py::test_instructions_contain_required_rules PASSED     [ 55%]
-tests/unit/test_context_builder.py::test_build_context_returns_five_layers PASSED      [ 66%]
-tests/unit/test_context_builder.py::test_build_context_default_state_handling PASSED   [ 77%]
-tests/unit/test_context_builder.py::test_input_mutation_prevention PASSED              [ 88%]
-tests/unit/test_context_builder.py::test_missing_config_raises_file_not_found_error PASSED [100%]
-...
-=================================== 13 passed in 0.05s ===================================
+tests/unit/test_context_builder.py::test_config_files_exist_and_load PASSED [  6%]
+tests/unit/test_context_builder.py::test_policies_contain_required_boundaries PASSED [ 12%]
+tests/unit/test_context_builder.py::test_evidence_classifications_present PASSED [ 18%]
+tests/unit/test_context_builder.py::test_instructions_contain_required_rules PASSED [ 25%]
+tests/unit/test_context_builder.py::test_build_context_returns_five_layers PASSED [ 31%]
+tests/unit/test_context_builder.py::test_build_context_default_state_handling PASSED [ 37%]
+tests/unit/test_context_builder.py::test_input_mutation_prevention PASSED [ 43%]
+tests/unit/test_context_builder.py::test_missing_config_raises_file_not_found_error PASSED [ 50%]
+tests/unit/test_context_builder.py::test_evidence_provenance_preservation PASSED [ 56%]
+tests/unit/test_context_builder.py::test_missing_account_fields_remain_unknown PASSED [ 62%]
+tests/unit/test_context_builder.py::test_untrusted_notes_and_evidence_isolation PASSED [ 68%]
+tests/unit/test_context_builder.py::test_scenario_qualified_account PASSED [ 75%]
+tests/unit/test_context_builder.py::test_scenario_unqualified_account PASSED [ 81%]
+tests/unit/test_context_builder.py::test_scenario_insufficient_evidence PASSED [ 87%]
+tests/unit/test_context_builder.py::test_scenario_prompt_injection PASSED [ 93%]
+tests/unit/test_starter.py::test_starter_environment PASSED              [100%]
+
+============================== 16 passed in 0.19s ==============================
 ```
 
 ---
