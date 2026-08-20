@@ -1,23 +1,15 @@
 account:
-  company_name: Corner Market Bodega
-  industry: consumer_retail
-  employee_count: 350
+  company_name: Tiny Parts Inc
+  employee_count: 1200
+  industry: manufacturing
   region: united_states
-  buying_signals: []
-  account_notes: Local convenience store operator seeking retail POS upgrades.
-
-objective: Evaluate suitability for WidgetWare enterprise industrial platform.
-
+objective: Evaluate Tiny Parts Inc for product fit.
 evidence:
-  - claim: Corner Market operates small neighborhood convenience stores.
+  - claim: Tiny Parts Inc operates a single facility with manual lines.
     classification: verified_fact
     source:
-      name: Local Business Directory
-      url: https://example.com/directory/corner-market
-      retrieved_at: "2026-08-01"
-    excerpt: Corner Market is a chain of 12 retail convenience stores in the Tri-State area.
-
-state:
-  current_step: initial_qualification
-  prior_decisions: []
-  approval_status: not_requested
+      name: Industry Directory
+      url: https://directory.example.com/tinyparts
+      retrieved_at: 2026-08-07
+    excerpt: Tiny Parts Inc is a small boutique parts maker with manually operated lines.
+state: {}

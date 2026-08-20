@@ -1,23 +1,8 @@
 account:
-  company_name: Unknown Manufacturing Group
-  industry: unknown
+  company_name: Unknown Co
   employee_count: null
-  region: unknown
-  buying_signals: []
-  account_notes: Incomplete lead record imported from unverified directory.
-
-objective: Determine if account meets WidgetWare ICP criteria.
-
-evidence:
-  - claim: Company name appears in an unverified directory without employee count or verified industry.
-    classification: unknown
-    source:
-      name: Incomplete Web Directory Listing
-      url: https://example.com/unverified/unknown-mfg
-      retrieved_at: "2026-08-05"
-    excerpt: Unknown Manufacturing Group - listing created with incomplete company details.
-
-state:
-  current_step: initial_qualification
-  prior_decisions: []
-  approval_status: not_requested
+  industry: manufacturing
+  region: europe
+objective: Evaluate Unknown Co for product fit.
+evidence: []
+state: {}

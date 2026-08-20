@@ -1,22 +1,37 @@
-"""Context builder for WidgetWare SDR analysis."""
+"""Assemble the WidgetWare context package.
+
+Book 1 §3.2 separates context into five layers: system instructions,
+business context, task context, retrieved evidence, and state. This
+module builds that package deterministically, ensuring clear separation
+and protection against input mutation and side effects.
+"""
+
+from __future__ import annotations
 
 import copy
 from pathlib import Path
 from typing import Any
+
 import yaml
 
 from widgetware_sdr.instructions import get_system_instructions
 
+CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
-def _load_yaml_config(file_path: Path) -> dict[str, Any]:
-    """Load a YAML configuration file safely, raising FileNotFoundError if missing."""
-    if not file_path.is_file():
-        raise FileNotFoundError(f"Required configuration file not found: {file_path}")
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    if data is None:
-        return {}
-    return data
+
+def load_config(name: str) -> dict[str, Any]:
+    """Load one of the stable YAML business-configuration files.
+
+    Raises FileNotFoundError if the file does not exist.
+    """
+    path = CONFIG_DIR / name
+    if not path.exists():
+        raise FileNotFoundError(f"Required configuration file '{name}' is missing at {path}")
+    with path.open("r", encoding="utf-8") as f:
+        content = yaml.safe_load(f)
+        if content is None:
+            return {}
+        return content
 
 
 def build_context(
@@ -24,59 +39,39 @@ def build_context(
     objective: str,
     evidence: list[dict[str, Any]],
     state: dict[str, Any] | None = None,
-    config_dir: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Assemble the 5-layer WidgetWare SDR context package deterministically.
+    """Build a full Context Package for one account.
 
-    Args:
-        account: Target account data (treated as untrusted task context).
-        objective: SDR research / analysis goal.
-        evidence: List of provenance-tracked evidence records.
-        state: Workflow execution state. Defaults to empty dictionary if None.
-        config_dir: Optional path to configuration directory. Defaults to 'config/' at workspace root.
-
-    Returns:
-        A dictionary containing the 5 isolated context layers:
-        - system_instructions (str)
-        - business_context (dict with products, icp, policies)
-        - task_context (dict with account, objective)
-        - retrieved_evidence (list of evidence records)
-        - state (dict)
+    Guarantees:
+    - Loads products.yaml, icp.yaml, and policies.yaml.
+    - Raises FileNotFoundError if any of the configurations are missing.
+    - Separates system instructions, business context, task context, evidence, and state.
+    - Prevents mutation of input objects.
+    - Preserves evidence provenance and supplied state.
+    - Uses an empty state object when state is omitted.
     """
-    if config_dir is None:
-        # Default to repo root config directory relative to this source file
-        base_dir = Path(__file__).resolve().parent.parent.parent
-        resolved_config_dir = base_dir / "config"
-    else:
-        resolved_config_dir = Path(config_dir)
+    # 1. Load stable configurations, raising clear errors if missing
+    products = load_config("products.yaml")
+    icp = load_config("icp.yaml")
+    policies = load_config("policies.yaml")
 
-    products_path = resolved_config_dir / "products.yaml"
-    icp_path = resolved_config_dir / "icp.yaml"
-    policies_path = resolved_config_dir / "policies.yaml"
+    # 2. Avoid modifying input objects (create deep copies)
+    account_copy = copy.deepcopy(account)
+    evidence_copy = copy.deepcopy(evidence)
+    state_copy = copy.deepcopy(state) if state is not None else {}
 
-    products_config = _load_yaml_config(products_path)
-    icp_config = _load_yaml_config(icp_path)
-    policies_config = _load_yaml_config(policies_path)
-
-    # Deepcopy all untrusted/dynamic inputs to ensure no input mutation
-    safe_account = copy.deepcopy(account)
-    safe_objective = copy.deepcopy(objective)
-    safe_evidence = copy.deepcopy(evidence)
-    safe_state = copy.deepcopy(state) if state is not None else {}
-
-    context: dict[str, Any] = {
+    # 3. Assemble the layers
+    return {
         "system_instructions": get_system_instructions(),
         "business_context": {
-            "products": products_config,
-            "icp": icp_config,
-            "policies": policies_config,
+            "products": products,
+            "icp": icp,
+            "policies": policies,
         },
         "task_context": {
-            "account": safe_account,
-            "objective": safe_objective,
+            "account": account_copy,
+            "objective": objective,
         },
-        "retrieved_evidence": safe_evidence,
-        "state": safe_state,
+        "retrieved_evidence": evidence_copy,
+        "state": state_copy,
     }
-
-    return context

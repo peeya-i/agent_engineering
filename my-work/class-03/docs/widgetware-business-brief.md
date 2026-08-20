@@ -1,22 +1,35 @@
 # WidgetWare Business Brief
 
-## 1. Company Overview
-WidgetWare sells enterprise software and services designed to help manufacturing and industrial automation enterprises modernize plant operations and safely adopt AI-enabled operational automation.
+## What WidgetWare sells
 
-## 2. Product Offerings & Target Buyers
-- **Plant Operations Platform**: Unifies distributed plant floor data, process monitoring, and operational metrics.
-  - *Target Buyers*: VP of Manufacturing, Plant Operations Director, Chief Digital Officer.
-  - *Value Proposition*: Operational visibility, downtime reduction, foundation for AI analytics.
-- **Industrial AI Accelerator**: Strategic guidance, blueprints, and governed frameworks to implement high-value industrial AI use cases.
-  - *Target Buyers*: Chief Technology Officer, VP of Digital Transformation, Head of Industrial AI.
-  - *Value Proposition*: Rapid, governed time-to-value for generative and predictive manufacturing AI.
+WidgetWare sells software that helps manufacturing and industrial-automation companies modernize plant operations and adopt AI-enabled automation.
 
-## 3. Ideal Customer Profile (ICP)
-- **Scale**: Large enterprises with 5,000+ employees.
-- **Industries**: Discrete & process manufacturing, industrial automation, automotive, electronics, and heavy equipment.
-- **Geography**: Primary operations in the United States, Europe, and India.
-- **Buying Signals**: Digital transformation initiatives, plant modernization programs, new AI leadership, GenAI hiring, or manufacturing data infrastructure projects.
+## Who this system is for
 
-## 4. SDR Role & Human Boundary
-The future SDR agent performs research, matches target accounts against the ICP, evaluates provided evidence, and prepares hypothesis drafts.
-- **Human-in-the-Loop Boundary**: The SDR agent must never autonomously send emails, dispatch social messages, alter CRM records, or commit to pricing/contracts. All external outreach requires explicit human approval.
+Sales Development Representatives (SDRs) at WidgetWare, whose job is to identify potential customers, research them, determine whether there is a plausible fit, and begin a conversation that may lead to a sales opportunity.
+
+## Ideal customer profile (ICP)
+
+- **Industries:** manufacturing, industrial automation
+- **Minimum employee count:** 5,000 (no upper bound)
+- **Preferred regions:** United States, Europe, India
+- **Buying signals:**
+  - new AI leadership (a recently hired or promoted executive with an AI or digital mandate)
+  - an active digital-transformation program
+  - active GenAI-related hiring
+
+## What counts as evidence of fit
+
+- Legacy plant-floor systems with no clear path to AI-enabled automation.
+- Recent public statements about digital transformation, plant modernization, or AI adoption.
+- Organizational signals matching the buying signals above.
+
+## What is explicitly excluded
+
+- Companies below the minimum employee threshold.
+- Industries outside manufacturing and industrial automation, unless a documented exception is approved.
+- Any company for which WidgetWare does not have (or cannot legitimately obtain) approved public evidence.
+
+## Evidence policy (introduced fully in Class 2)
+
+Every material claim this system makes must be one of: a verified fact (directly supported by an approved source), a derived fact (deterministically calculated from verified facts), an inference (a reasoned conclusion that remains uncertain and must be labeled as such), or explicitly unknown. Contradictions between sources must be surfaced, never silently resolved in whichever direction looks more convenient.

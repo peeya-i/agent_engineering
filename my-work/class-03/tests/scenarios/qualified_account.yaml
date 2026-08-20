@@ -1,33 +1,16 @@
 account:
-  company_name: Apex Industrial Systems
-  industry: industrial_automation
-  employee_count: 12000
+  company_name: Acme Manufacturing
+  employee_count: 7500
+  industry: manufacturing
   region: united_states
-  buying_signals:
-    - plant_modernization
-    - new_ai_leadership
-  account_notes: Evaluating enterprise plant modernization across 14 manufacturing sites.
-
-objective: Assess account qualification against WidgetWare ICP and prepare SDR briefing.
-
+objective: Evaluate Acme Manufacturing for product fit and target buyer alignment.
 evidence:
-  - claim: Apex Industrial Systems announced a $50M plant-modernization program.
+  - claim: Acme is launching a plant modernization program.
     classification: verified_fact
     source:
-      name: Apex Industrial Press Release
-      url: https://example.com/press/apex-modernization
-      retrieved_at: "2026-08-07"
-    excerpt: Apex Industrial announced a multi-year $50M investment into plant-floor digital modernization.
-
-  - claim: Appointed new VP of Industrial AI to oversee smart factory initiatives.
-    classification: verified_fact
-    source:
-      name: Industry Trade Journal
-      url: https://example.com/news/apex-new-vp-ai
-      retrieved_at: "2026-08-10"
-    excerpt: Dr. Marcus Vance joins Apex as Vice President of Industrial AI and Automation.
-
+      name: Company Press Release
+      url: https://acme.example.com/press/modernization
+      retrieved_at: 2026-08-07
+    excerpt: Acme announced a multi-year effort to modernize plant floors.
 state:
-  current_step: initial_qualification
-  prior_decisions: []
-  approval_status: pending
+  current_stage: qualification

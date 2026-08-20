@@ -4,14 +4,11 @@ maximum_employee_count: null
 preferred_industries:
   - manufacturing
   - industrial_automation
-  - automotive_manufacturing
-  - electronics_manufacturing
-  - industrial_equipment
 
 excluded_industries:
-  - consumer_retail
-  - restaurants
-  - personal_services
+  - financial_services
+  - healthcare
+  - retail
 
 preferred_regions:
   - united_states
@@ -21,12 +18,9 @@ preferred_regions:
 buying_signals:
   - new_ai_leadership
   - digital_transformation_program
-  - plant_modernization
   - genai_hiring
-  - manufacturing_data_initiative
 
-required_fields:
-  - company_name
-  - industry
+required_account_fields:
   - employee_count
+  - industry
   - region
