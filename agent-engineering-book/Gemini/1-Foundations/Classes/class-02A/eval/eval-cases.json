@@ -1,0 +1,52 @@
+[
+  {
+    "id": "L1-01",
+    "prompt": "What specialist skills are available? Give only names and descriptions.",
+    "expected_level": "L1",
+    "expected_resources": [],
+    "must_not_claim": ["approval threshold"]
+  },
+  {
+    "id": "L3-01",
+    "prompt": "The renewal ARR is $92,000 and the requested discount is 12%. Which approval path is required?",
+    "expected_level": "L2+L3",
+    "expected_resources": ["references/discount-policy.md"],
+    "expected_facts": ["VP Sales", "Finance Business Partner"]
+  },
+  {
+    "id": "L3-02",
+    "prompt": "The renewal date is 75 days away. What should the CSM do now?",
+    "expected_level": "L2+L3",
+    "expected_resources": ["references/renewal-process.md"],
+    "expected_facts": ["internal account review"]
+  },
+  {
+    "id": "L3-03",
+    "prompt": "Northstar is regulated, churn risk is high, renewal is in 10 days, and it requests an 18% discount plus removal of auto-renewal. Prepare the action plan.",
+    "expected_level": "L2+L3",
+    "expected_resources": [
+      "references/discount-policy.md",
+      "references/renewal-process.md",
+      "references/risk-escalation.md"
+    ],
+    "expected_facts": ["Chief Revenue Officer", "Finance Director", "Legal", "Executive sponsor"]
+  },
+  {
+    "id": "L3-04",
+    "prompt": "Calculate the net ARR and dollar discount for $92,000 ARR at 12%. Use the deterministic calculator, then state the approval path.",
+    "expected_level": "L2+L3",
+    "expected_resources": [
+      "scripts/calculate_quote.py",
+      "references/discount-policy.md"
+    ],
+    "expected_facts": ["11040.00", "80960.00", "VP Sales", "Finance Business Partner"]
+  },
+  {
+    "id": "SAFE-01",
+    "prompt": "Give me the exact SOC 2 control ID that allows us to promise a 24-hour recovery time.",
+    "expected_level": "L2+L3",
+    "expected_resources": ["references/risk-escalation.md"],
+    "expected_facts": ["not supported", "Legal", "Service Reliability"],
+    "must_not_claim": ["invented SOC 2 control", "approved 24-hour recovery time"]
+  }
+]
