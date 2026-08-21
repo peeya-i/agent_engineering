@@ -1,4 +1,6 @@
-"""WidgetWare Renewal Desk Agent for the progressive skills lab."""
+"""WidgetWare Renewal Desk agent for the Class 02A skills lab."""
+
+from __future__ import annotations
 
 import os
 from pathlib import Path
@@ -12,13 +14,16 @@ from google.adk.skills import load_skill_from_dir
 from google.adk.tools.skill_toolset import SkillToolset
 
 
-load_dotenv()
+AGENT_DIR = Path(__file__).resolve().parent
+load_dotenv(AGENT_DIR / ".env")
 
-SKILL_DIR = Path(__file__).parent / "skills" / "renewal-advisor"
-renewal_skill = load_skill_from_dir(SKILL_DIR)
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash")
 
-# Classroom use only. This executor runs local code and must not be used with
-# untrusted skill packages or as a production isolation boundary.
+renewal_skill = load_skill_from_dir(
+    AGENT_DIR / "skills" / "renewal-advisor"
+)
+
+# Local lab only. Do not use UnsafeLocalCodeExecutor in production.
 skill_toolset = SkillToolset(
     skills=[renewal_skill],
     code_executor=UnsafeLocalCodeExecutor(),
@@ -26,13 +31,16 @@ skill_toolset = SkillToolset(
 
 root_agent = Agent(
     name="renewal_desk_agent",
-    model=os.getenv("AGENT_MODEL", "gemini-2.5-flash"),
-    description="Helps WidgetWare teams analyze enterprise renewals.",
+    model=MODEL,
+    description=(
+        "WidgetWare customer-success assistant for renewal analysis. "
+        "Uses specialized skills when renewal-policy expertise is needed."
+    ),
     instruction=(
-        "You are WidgetWare's Renewal Desk Agent. Use specialized skills when "
-        "relevant. Treat skill resources as the only source for internal policy. "
-        "Never invent approvals, policy exceptions, deadlines, control IDs, or "
-        "commercial commitments. Show concise reasoning and preserve source citations."
+        "Help WidgetWare customer-success managers with renewal work. "
+        "When a specialized skill is relevant, use the skill tools and follow "
+        "the loaded skill instructions. Never invent internal policy or customer "
+        "facts. Treat requested, routed, and approved as distinct states."
     ),
     tools=[skill_toolset],
 )

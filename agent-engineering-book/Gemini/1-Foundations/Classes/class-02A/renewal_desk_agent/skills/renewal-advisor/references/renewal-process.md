@@ -1,21 +1,19 @@
 # WidgetWare Renewal Process
 
-Policy owner: Customer Success Operations  
-Version: 2026.1
+Use this reference for renewal timing, milestone, and auto-renewal process questions.
 
-## Timeline
+## Timing milestones
 
-| Days before renewal | Required action |
-| --- | --- |
-| 120–91 days | Confirm account owner, contract inventory, renewal date, ARR, and product usage summary. |
-| 90–61 days | Hold internal account review; identify churn risks, expansion options, and commercial constraints. |
-| 60–31 days | Present renewal position to customer; open required approval requests. |
-| 30–15 days | Escalate unresolved commercial or legal blockers to the Renewal Desk. |
-| 14–0 days | Run daily close plan. Executive owner is required for high-risk or non-standard renewals. |
+| Days to renewal | Required focus |
+|---|---|
+| 90+ | Confirm account health, stakeholders, adoption, and renewal goals |
+| 60–89 | Validate commercial path, decision process, and auto-renewal notice requirements |
+| 30–59 | Finalize commercial options, approval dependencies, and customer action plan |
+| 0–29 | Treat unresolved commercial or legal blockers as urgent and escalate |
 
-## Commercial process rules
+## Auto-renewal
 
-- Auto-renewal removal is a non-standard contract change and requires Legal review.
-- Customer verbal agreement is not a completed renewal.
-- A renewal is complete only when the approved order form is executed and recorded.
-- If required inputs are missing, ask for them rather than assume values.
+- Do not promise removal of auto-renewal based only on a customer request.
+- Record the request and follow the contract/legal review path.
+- If the request is inside 30 days to renewal, treat it as urgent.
+- If contract terms are not supplied, do not invent the notice period.

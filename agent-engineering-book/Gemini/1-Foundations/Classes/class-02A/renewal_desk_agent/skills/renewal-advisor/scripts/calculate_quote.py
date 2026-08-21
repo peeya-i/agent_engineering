@@ -1,38 +1,40 @@
-"""Deterministically calculate discount amount and net ARR.
+#!/usr/bin/env python3
+"""Calculate deterministic renewal quote values.
 
-Example:
-  python calculate_quote.py --arr 92000 --discount-percent 12
+Usage:
+    python calculate_quote.py --arr 92000 --discount-pct 12
 """
+
+from __future__ import annotations
 
 import argparse
 import json
-from decimal import Decimal, ROUND_HALF_UP
 
 
-def money(value: Decimal) -> Decimal:
-    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+def calculate_quote(arr: float, discount_pct: float) -> dict[str, float]:
+    """Return list ARR, discount amount, and net ARR."""
+    if arr < 0:
+        raise ValueError("arr must be >= 0")
+    if not 0 <= discount_pct <= 100:
+        raise ValueError("discount_pct must be between 0 and 100")
+
+    discount_amount = arr * (discount_pct / 100.0)
+    net_arr = arr - discount_amount
+
+    return {
+        "list_arr": round(arr, 2),
+        "discount_pct": round(discount_pct, 4),
+        "discount_amount": round(discount_amount, 2),
+        "net_arr": round(net_arr, 2),
+    }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--arr", type=Decimal, required=True)
-    parser.add_argument("--discount-percent", type=Decimal, required=True)
+    parser.add_argument("--arr", type=float, required=True)
+    parser.add_argument("--discount-pct", type=float, required=True)
     args = parser.parse_args()
-
-    if args.arr < 0:
-        raise SystemExit("arr must be non-negative")
-    if args.discount_percent < 0 or args.discount_percent > 100:
-        raise SystemExit("discount-percent must be between 0 and 100")
-
-    discount_amount = money(args.arr * args.discount_percent / Decimal("100"))
-    net_arr = money(args.arr - discount_amount)
-    result = {
-        "arr": f"{money(args.arr):.2f}",
-        "discount_percent": f"{args.discount_percent.normalize()}",
-        "discount_amount": f"{discount_amount:.2f}",
-        "net_arr": f"{net_arr:.2f}",
-    }
-    print(json.dumps(result, sort_keys=True))
+    print(json.dumps(calculate_quote(args.arr, args.discount_pct), indent=2))
 
 
 if __name__ == "__main__":

@@ -1,28 +1,33 @@
 # WidgetWare Renewal Risk Escalation
 
-Policy owner: Customer Success and Legal  
-Version: 2026.3
+Use this reference for churn, security, legal, regulated-customer, or unsupported-assurance questions.
 
 ## Escalation triggers
 
-| Trigger | Required route |
-| --- | --- |
-| High churn risk with 30 days or less remaining | Executive sponsor and Renewal Desk |
-| Regulated customer requesting a new security, privacy, resilience, or compliance commitment | Security and Legal |
-| Any customer request for a guaranteed recovery time or service-level commitment not already in the signed contract | Legal and Service Reliability |
-| Request to remove or rewrite auto-renewal language | Legal |
-| Missing source or policy conflict | Policy owner; do not guess |
+Escalate when any of the following applies:
 
-## Evidence boundary
+- account is marked high churn risk;
+- regulated customer asks for a new assurance or compliance commitment;
+- security control coverage is unclear;
+- legal or contractual language is requested;
+- requested customer commitment is not supported by supplied policy;
+- renewal is within 30 days and a material risk remains unresolved.
 
-This resource does not contain SOC 2 control mappings, certification statements, recovery-time guarantees, or authority to make new customer commitments. When asked for one of those items, state that the supplied sources do not establish it and use the escalation route above.
+## Routing
 
-## Communication rule
+- Commercial/churn risk → Customer Success leadership.
+- Contract language / auto-renewal exception → Legal.
+- Security or compliance assurance → Reliability/Security + Legal.
+- Unsupported product/compliance claim → state that the provided sources do not establish the claim, then escalate.
 
-Separate these three states clearly:
+## Safety boundary
 
-1. **Requested** — the customer asked for it.
-2. **Routed** — the request was sent to the required reviewer.
-3. **Approved** — the named authority explicitly approved it.
+Never invent:
 
-Never collapse “requested” or “routed” into “approved.”
+- SOC 2 control coverage;
+- contractual commitments;
+- security certifications;
+- legal interpretations;
+- approval status.
+
+A grounded refusal plus escalation is a successful outcome when evidence is insufficient.

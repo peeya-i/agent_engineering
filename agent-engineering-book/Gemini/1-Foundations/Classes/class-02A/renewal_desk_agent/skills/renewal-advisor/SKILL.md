@@ -1,52 +1,15 @@
 ---
 name: renewal-advisor
-description: TODO - replace this with accurate L1 routing metadata without policy details.
+description: Helps with renewals. TODO: make this specific enough for accurate L1 routing.
 ---
 
 # Renewal Advisor
 
-> Student task: replace every `TODO` while keeping detailed policy in L3 resources.
+TODO: Engineer the L2 operating procedure.
 
-## When to use
+The final procedure must tell the agent when this skill applies, what inputs it needs,
+which exact resources to load for each intent, how to minimize resource loading,
+how to cite policy, how to handle unsupported questions, and how to preserve
+requested vs routed vs approved states.
 
-TODO
-
-## When not to use
-
-TODO
-
-## Required inputs
-
-TODO
-
-## Procedure
-
-1. TODO
-2. TODO
-3. TODO
-
-## Resource routing map
-
-TODO: map each question type to the exact path of the minimum necessary reference, asset, or script.
-
-## Output contract
-
-TODO
-
-## Unsupported and missing-source behavior
-
-TODO
-
-## Examples
-
-### Positive
-
-TODO
-
-### Negative
-
-TODO
-
-### Ambiguous
-
-TODO
+Do not copy detailed approval thresholds into this file. Those belong in L3 references.

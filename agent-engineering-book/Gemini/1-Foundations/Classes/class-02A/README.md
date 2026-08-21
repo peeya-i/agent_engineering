@@ -1,178 +1,192 @@
-# Agent Engineering Lab: Progressive Skills and Resources
+# Class 02A — Skills & Resources: WidgetWare Renewal Desk
 
-## Mission
+## What this class teaches
 
-Build a policy-grounded **WidgetWare Renewal Desk Agent**. The agent must help a customer-success manager evaluate renewal requests without placing every policy, template, and calculation rule in the agent's permanent prompt.
+This lab teaches **progressive disclosure** through a real ADK skill:
 
-You will use progressive disclosure:
+- **L1 — Metadata:** enough information to discover the right skill.
+- **L2 — Instructions:** the reusable procedure in `SKILL.md`.
+- **L3 — Resources:** detailed references, assets, and deterministic scripts loaded only when needed.
 
-| Level | What the agent receives | ADK interaction | Purpose |
-| --- | --- | --- | --- |
-| L1 — Metadata | Skill name and description | `list_skills` / injected catalog | Decide whether the skill is relevant |
-| L2 — Instructions | Full body of `SKILL.md` | `load_skill` | Learn the procedure and resource-routing rules |
-| L3 — Resources | Selected references, assets, or scripts | `load_skill_resource` / `run_skill_script` | Load only the evidence or executable needed now |
+The starter is intentionally incomplete at **L1 and L2**. The setup itself is complete.
 
-The important design constraint is **selective loading**. A good agent does not load every L3 file for every request.
+> Your job is to engineer the skill, not to repair the lab environment.
 
-## Learning objectives
+---
 
-By the end of the lab, you should be able to:
+## What you edit
 
-1. Distinguish a prompt, skill, tool, workflow, and resource.
-2. Design L1 metadata that routes accurately without leaking the entire policy.
-3. Write L2 instructions containing triggers, procedure, quality rules, and exact resource paths.
-4. Use L3 references, an asset, and a deterministic script only when needed.
-5. Verify resource use in the ADK trace.
-6. Refuse or escalate when the supplied resources do not support an answer.
+You should primarily edit:
 
-## Scenario
+```text
+renewal_desk_agent/skills/renewal-advisor/SKILL.md
+submission.md
+```
 
-WidgetWare renews enterprise software contracts. Customer-success managers need help with:
+You may make small changes elsewhere if needed, but do **not** rewrite the supplied policy resources just to make your answer easier.
 
-- Discount approval routing
-- Renewal timing and commercial process
-- Risk escalation
-- Renewal briefs for approvers
-- Deterministic quote calculations
+The L3 files are the source-controlled evidence for the exercise.
 
-The source documents are already provided. Your job is to engineer the skill, not invent policy.
+---
 
-## Timebox
+## 1. Synchronize your fork from the CLI
 
-90 minutes:
+One-time setup, if `upstream` is not already configured:
 
-- 10 min — Setup and baseline
-- 15 min — L1 metadata
-- 25 min — L2 instructions
-- 25 min — L3 resources and trace exercises
-- 10 min — Evaluation and fixes
-- 5 min — Reflection
+```bash
+git remote add upstream https://github.com/sensei-ji/agent_engineering.git
+git remote -v
+```
 
-## Rules
+Before starting the class:
 
-- Edit `renewal_desk_agent/skills/renewal-advisor/SKILL.md`.
-- Do not paste policy facts into `agent.py`.
-- Do not copy the full reference documents into `SKILL.md`.
-- Cite every policy conclusion using the exact relative path, for example `[Source: references/discount-policy.md]`.
-- Load only the minimum L3 resources needed for a request.
-- Never invent an approval, deadline, control ID, or policy exception.
-- If a resource or script path fails, do not guess several filenames. Report the missing path and stop.
+```bash
+git checkout main
+git fetch upstream
+git merge --ff-only upstream/main
+git push origin main
+```
 
-## Assignment
+Then copy the complete Class 02A folder into your own work area as instructed by the instructor.
 
-### Task 1 — Establish the baseline
+Do **not** copy a Class 02 golden solution into 02A. Class 02A is self-contained.
 
-1. Complete the setup in `SETUP.md`.
-2. Start ADK Web.
-3. Ask: `What specialist skills are available to you? Give only their names and descriptions.`
-4. Inspect the trace and record what was visible at L1 in `SUBMISSION.md`.
-5. Ask: `A customer asked for a renewal discount. What should I do?`
-6. Record the weaknesses of the starter skill before editing it.
+---
 
-### Task 2 — Engineer L1 metadata
+## 2. Read these files in order
 
-Replace the placeholder description in `SKILL.md` with a description that:
+1. `README.md`
+2. `SETUP.md`
+3. `ASSIGNMENT.md`
+4. `CASES.md`
+5. `renewal_desk_agent/skills/renewal-advisor/SKILL.md`
 
-- States the capability and the main trigger situations.
-- Is specific enough to select for renewal, discount, escalation, and renewal-brief questions.
-- Does not contain approval thresholds or other policy facts.
-- Does not trigger for unrelated product troubleshooting.
+Use Markdown Preview in your IDE if that makes the files easier to read.
 
-Run `pytest -q` after making the change.
+---
 
-### Task 3 — Engineer L2 instructions
+## 3. Verify the starter before doing the assignment
 
-Complete the body of `SKILL.md`. It must include:
+Create and activate a virtual environment, install dependencies, then run:
 
-1. When to use and when not to use the skill.
-2. Required inputs and how to handle missing inputs.
-3. A step-by-step procedure.
-4. An exact routing map from question type to L3 file path.
-5. A minimum-resource rule.
-6. Citation and output requirements.
-7. Refusal/escalation behavior for unsupported questions.
-8. Positive, negative, and ambiguous examples.
+```bash
+python -m pytest -q tests/test_starter_integrity.py
+```
 
-The L2 file should tell the agent **how to work** and **where to look**. The L3 files remain the source of detailed truth.
+Expected result:
 
-### Task 4 — Demonstrate selective L3 loading
+```text
+PASS
+```
 
-Run the following prompts one at a time in new sessions. For each, inspect the trace and record the loaded files in `SUBMISSION.md`.
+This proves the supplied resources, calculator, model configuration, and starter structure are healthy.
 
-#### Case A — One reference
+Now run:
 
-`The renewal ARR is $92,000 and the requested discount is 12%. Which approval path is required?`
+```bash
+python -m pytest -q
+```
 
-Expected behavior: load the discount policy only, state the approval path, and cite it.
+**Before you complete the skill, assignment tests are expected to fail.**
 
-#### Case B — A different single reference
+Those failures describe the learning gap: incomplete L1 metadata, incomplete L2 instructions, and an unfinished submission record.
 
-`The renewal date is 75 days away. What should the CSM do now?`
+---
 
-Expected behavior: load the renewal process only.
+## 4. Run the preflight
 
-#### Case C — Cross-resource reasoning
+Offline configuration check:
 
-`Northstar is a regulated customer, churn risk is high, renewal is in 10 days, and it requests an 18% discount plus removal of auto-renewal. Prepare the action plan.`
+```bash
+python scripts/preflight.py
+```
 
-Expected behavior: load all and only the policy references needed to combine commercial, timing, and risk guidance.
+Optional live model/auth check:
 
-#### Case D — Asset use
+```bash
+python scripts/preflight.py --online
+```
 
-`Create an approval-ready renewal brief for Northstar using the official format. ARR is $150,000, discount is 18%, renewal is in 10 days, risk is high, and the customer asks to remove auto-renewal.`
+Run the online preflight **before** the main lab. It is designed to catch:
 
-Expected behavior: load the official template plus the policy references required to complete it. Do not fabricate missing fields.
+- missing API credentials;
+- Vertex AI authentication problems;
+- invalid model names;
+- quota or billing failures;
+- network failures.
 
-#### Case E — Script use
+---
 
-`Calculate the net ARR and dollar discount for $92,000 ARR at 12%. Use the deterministic calculator, then state the approval path.`
+## 5. Start ADK Web from the correct directory
 
-Expected behavior: run the exact calculator script for arithmetic and load the discount policy for approval.
+Run this command from the **Class 02A root**, the directory that contains `renewal_desk_agent/`:
 
-#### Case F — Unsupported question
+```bash
+adk web .
+```
 
-`Give me the exact SOC 2 control ID that allows us to promise a 24-hour recovery time.`
+Correct:
 
-Expected behavior: state that the provided sources do not support the requested control ID or promise, then name the proper escalation route. Do not invent an answer.
+```text
+class-02A/
+├── renewal_desk_agent/
+└── tests/
 
-### Task 5 — Evaluate and improve
+$ adk web .
+```
 
-1. Run `pytest -q` until all structural tests pass.
-2. Run every case in `eval/eval-cases.json` manually through ADK Web.
-3. Give each case a score of 0 or 1 for each criterion:
-   - Correct skill selection
-   - Minimum resource loading
-   - Factual correctness
-   - Required citation
-   - Safe unsupported handling
-4. Fix `SKILL.md` if any case scores below 4/5.
+Do **not** `cd renewal_desk_agent` and then run `adk web .`.
 
-### Task 6 — Submit
+ADK Web discovers agent application directories beneath the directory you give it.
 
-Submit:
+---
 
-- Completed `SKILL.md`
-- Completed `SUBMISSION.md`
-- Screenshot or exported trace evidence for Cases A, C, E, and F
-- Output of `pytest -q`
-- One Git commit with the message: `complete progressive skills lab`
+## 6. The build loop
 
-## Definition of done
+Use this loop throughout the assignment:
 
-Your agent demonstrates the sequence:
+```text
+READ → PREDICT → RUN → TRACE → FIX → TEST → RECORD
+```
 
-`L1 discovery → L2 procedure → minimum necessary L3 evidence or execution → grounded answer`
+For every case:
 
-It must also demonstrate that **not loading** an irrelevant resource is an intentional engineering behavior.
+1. Predict which skill/resource should load.
+2. Run the case in a **new ADK session**.
+3. Inspect the trace.
+4. Record exact L1 → L2 → L3 behavior.
+5. Fix the skill if behavior is wrong.
+6. Re-run tests.
+7. Record the final result in `submission.md`.
 
-## Concept check
+---
 
-| Artifact | Role |
-| --- | --- |
-| Prompt | Instruction for this agent or interaction |
-| Skill | Reusable, versionable procedure or expertise |
-| Resource | Detail loaded by a skill only when needed |
-| Tool | Capability that reads, calculates, calls, or changes something |
-| Workflow | Coordinates stages, agents, state, and control flow |
+## 7. Final verification
 
-Official reference: [ADK Skills documentation](https://adk.dev/skills/).
+```bash
+python -m pytest -q
+python grader.py
+```
+
+Both must pass.
+
+Then review:
+
+```bash
+git status
+git diff
+```
+
+Commit and push your work.
+
+---
+
+## Important boundaries
+
+- A **skill** is reusable instruction/procedure, not model training.
+- A **resource** is detailed knowledge, template, or executable content loaded only when required.
+- A **tool** executes an action.
+- A **workflow** controls sequencing/state.
+- Requested, routed, and approved are different commercial states.
+- Never invent a policy rule or compliance claim.
+- A grounded refusal is a correct result when the supplied resources do not support the requested claim.

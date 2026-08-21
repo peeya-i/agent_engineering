@@ -1,63 +1,90 @@
-# Student Submission
+# Class 02A Submission
 
-Name:  
-Date:  
-Commit hash:  
+## Student
+- Name:
+- GitHub:
+- Branch / commit:
 
-## 1. Baseline observations
+---
 
-What was visible at L1?
+# Baseline observations
 
-> TODO
+## L1
+TODO
 
-What weaknesses did you observe before completing `SKILL.md`?
+## L2
+TODO
 
-> TODO
+## L3
+TODO
 
-## 2. Trace evidence
+---
 
-| Case | L1 observed | L2 loaded? | Exact L3 paths loaded | Irrelevant paths avoided | Result |
-| --- | --- | --- | --- | --- | --- |
-| A | TODO | TODO | TODO | TODO | TODO |
-| B | TODO | TODO | TODO | TODO | TODO |
-| C | TODO | TODO | TODO | TODO | TODO |
-| D | TODO | TODO | TODO | TODO | TODO |
-| E | TODO | TODO | TODO | TODO | TODO |
-| F | TODO | TODO | TODO | TODO | TODO |
+# Final trace evidence
 
-## 3. Evaluation scores
+## Case A
+- Predicted L3:
+- Observed L1:
+- Observed L2:
+- Observed L3:
+- Final result:
+- Unnecessary resources loaded:
 
-Score each item 0 or 1.
+## Case B
+- Predicted L3:
+- Observed L1:
+- Observed L2:
+- Observed L3:
+- Final result:
+- Unnecessary resources loaded:
 
-| Eval ID | Selection | Minimum resources | Correct facts | Citation | Safe handling | Total /5 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| L1-01 |  |  |  |  |  |  |
-| L3-01 |  |  |  |  |  |  |
-| L3-02 |  |  |  |  |  |  |
-| L3-03 |  |  |  |  |  |  |
-| L3-04 |  |  |  |  |  |  |
-| SAFE-01 |  |  |  |  |  |  |
+## Case C
+- Predicted L3:
+- Observed L1:
+- Observed L2:
+- Observed L3:
+- Final result:
+- Unnecessary resources loaded:
 
-## 4. Reflection
+## Case D
+- Predicted L3:
+- Observed L1:
+- Observed L2:
+- Observed L3:
+- Final result:
+- Unnecessary resources loaded:
 
-### Why is policy detail stored at L3 instead of L1?
+## Case E
+- Predicted L3:
+- Observed L1:
+- Observed L2:
+- Observed L3:
+- Final result:
+- Unnecessary resources loaded:
 
-> TODO
+## Case F
+- Predicted L3:
+- Observed L1:
+- Observed L2:
+- Observed L3:
+- Final result:
+- Unnecessary resources loaded:
 
-### What is the difference between a skill and a tool in this lab?
+---
 
-> TODO
+# What I learned
 
-### Give one example where loading fewer resources improves the agent.
+## Skill vs resource
+TODO
 
-> TODO
+## L1 → L2 → L3 progressive disclosure
+TODO
 
-### What failure could occur if `SKILL.md` names resources vaguely instead of using exact paths?
+## Why minimum-resource loading matters
+TODO
 
-> TODO
+## Why deterministic math belongs in a script
+TODO
 
-## 5. Test output
-
-```text
-TODO: paste pytest -q output
-```
+## Why safe abstention can be a correct answer
+TODO
