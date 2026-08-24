@@ -1,0 +1,16 @@
+account:
+  company_name: Acme Manufacturing
+  employee_count: 7500
+  industry: manufacturing
+  region: united_states
+objective: Evaluate Acme Manufacturing for product fit and target buyer alignment.
+evidence:
+  - claim: Acme is launching a plant modernization program.
+    classification: verified_fact
+    source:
+      name: Company Press Release
+      url: https://acme.example.com/press/modernization
+      retrieved_at: 2026-08-07
+    excerpt: Acme announced a multi-year effort to modernize plant floors.
+state:
+  current_stage: qualification

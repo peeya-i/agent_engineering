@@ -1,0 +1,35 @@
+company:
+  name: WidgetWare
+  description: >
+    WidgetWare helps manufacturing and industrial-automation
+    companies modernize plant operations and adopt AI-enabled
+    automation.
+
+products:
+  - id: plant_operations_platform
+    name: Plant Operations Platform
+    description: >
+      Connects plant-operational information and helps teams
+      monitor and improve manufacturing processes.
+    target_buyers:
+      - VP of Manufacturing
+      - Plant Operations Director
+      - Chief Digital Officer
+    approved_claims:
+      - Helps consolidate operational information.
+      - Supports plant-modernization initiatives.
+      - Provides a foundation for AI-enabled operational analysis.
+
+  - id: industrial_ai_accelerator
+    name: Industrial AI Accelerator
+    description: >
+      Helps industrial organizations identify and implement
+      governed AI use cases.
+    target_buyers:
+      - Chief Technology Officer
+      - VP of Digital Transformation
+      - Head of Industrial AI
+    approved_claims:
+      - Helps identify high-value industrial AI opportunities.
+      - Supports governed adoption of AI capabilities.
+      - Connects business objectives with implementation planning.

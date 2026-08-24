@@ -1,0 +1,25 @@
+account:
+  company_name: Horizon Aerospace
+  industry: aerospace_manufacturing
+  employee_count: 8500
+  region: united_states
+  buying_signals:
+    - plant_modernization
+
+objective: Assess conflicting evidence regarding Horizon Aerospace plant closure vs expansion.
+
+evidence:
+  - claim: Horizon Aerospace announced the expansion of its primary assembly plant in Ohio.
+    classification: conflict
+    source:
+      name: Industry News Daily
+      url: https://example.com/horizon-plant-expansion
+      retrieved_at: "2026-08-10"
+    excerpt: Horizon Aerospace breaks ground on major facility expansion.
+  - claim: Horizon Aerospace announced the closure and consolidation of its Ohio assembly plant.
+    classification: conflict
+    source:
+      name: Financial Express
+      url: https://example.com/horizon-plant-closure
+      retrieved_at: "2026-08-11"
+    excerpt: Horizon Aerospace plans to close Ohio plant by end of quarter.

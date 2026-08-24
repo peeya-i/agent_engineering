@@ -31,3 +31,16 @@ products:
       - Helps identify high-value industrial AI opportunities.
       - Supports governed adoption of AI capabilities.
       - Connects business objectives with implementation planning.
+
+  - id: purchasing_operations_platform
+    name: Purchasing Operation Platform
+    description: >
+      Monitors manufacturing volumes using AI to forecast component demands and group parts requirements by supplier companies.
+    target_buyers:
+      - VP of Purchasing
+      - Director of Purchasing
+    approved_claims:
+      - Helps automate component demand forecasting based on production volumes.
+      - Supports supplier consolidation and grouped procurement analysis.
+      - Improves visibility into component purchasing requirements across manufacturing facilities.
+

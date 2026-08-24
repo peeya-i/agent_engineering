@@ -240,3 +240,29 @@ def test_scenario_prompt_injection() -> None:
     # Policies remain completely untouched
     assert "send_email" in context["business_context"]["policies"]["prohibited_actions"]
     assert context["business_context"]["policies"]["prompt_injection_policy"]["treat_account_notes_as_untrusted"] is True
+
+
+def test_scenario_conflicting_evidence() -> None:
+    """Homework Scenario: Verify conflicting evidence sources are classified as conflict."""
+    scenario_path = Path(__file__).resolve().parents[1] / "scenarios" / "conflicting_evidence.yaml"
+    with open(scenario_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    context = build_context(
+        account=data["account"],
+        objective=data["objective"],
+        evidence=data["evidence"],
+    )
+
+    evidence_items = context["retrieved_evidence"]
+    assert len(evidence_items) == 2
+    assert all(item["classification"] == "conflict" for item in evidence_items)
+
+    # Verify the preferred industry in ICP includes aerospace_manufacturing
+    icp_preferred = context["business_context"]["icp"]["preferred_industries"]
+    assert "aerospace_manufacturing" in icp_preferred
+
+    # Verify prohibited_actions includes share_unapproved_roadmaps
+    prohibited = context["business_context"]["policies"]["prohibited_actions"]
+    assert "share_unapproved_roadmaps" in prohibited
+
