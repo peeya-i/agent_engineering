@@ -32,9 +32,11 @@ def calculate_quote(arr: float, discount_pct: float) -> dict[str, float]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--arr", type=float, required=True)
-    parser.add_argument("--discount-pct", type=float, required=True)
+    parser.add_argument("--discount-percent", "--discount-pct", "--discount", type=float, required=True, dest="discount_pct")
     args = parser.parse_args()
-    print(json.dumps(calculate_quote(args.arr, args.discount_pct), indent=2))
+    res = calculate_quote(args.arr, args.discount_pct)
+    formatted = {k: f"{v:.2f}" for k, v in res.items()}
+    print(json.dumps(formatted, indent=2))
 
 
 if __name__ == "__main__":
