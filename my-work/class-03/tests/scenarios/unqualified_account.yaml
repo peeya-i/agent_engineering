@@ -1,15 +1,17 @@
 account:
-  company_name: Tiny Parts Inc
-  employee_count: 1200
-  industry: manufacturing
+  company_name: Corner Market Retail
+  industry: consumer_retail
+  employee_count: 350
   region: united_states
-objective: Evaluate Tiny Parts Inc for product fit.
+  buying_signals: []
+
+objective: Evaluate account fit for WidgetWare products.
+
 evidence:
-  - claim: Tiny Parts Inc operates a single facility with manual lines.
+  - claim: Corner Market opened 3 new local storefronts.
     classification: verified_fact
     source:
-      name: Industry Directory
-      url: https://directory.example.com/tinyparts
-      retrieved_at: 2026-08-07
-    excerpt: Tiny Parts Inc is a small boutique parts maker with manually operated lines.
-state: {}
+      name: Local News
+      url: https://example.com/corner-market-expansion
+      retrieved_at: "2026-08-10"
+    excerpt: Corner Market Retail opens three new retail locations.

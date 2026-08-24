@@ -1,37 +1,48 @@
-"""Assemble the WidgetWare context package.
-
-Book 1 §3.2 separates context into five layers: system instructions,
-business context, task context, retrieved evidence, and state. This
-module builds that package deterministically, ensuring clear separation
-and protection against input mutation and side effects.
-"""
-
-from __future__ import annotations
+"""Context builder for WidgetWare SDR package."""
 
 import copy
 from pathlib import Path
 from typing import Any
-
 import yaml
 
 from widgetware_sdr.instructions import get_system_instructions
 
-CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
+def _load_yaml_config(file_path: Path) -> dict[str, Any]:
+    """Load a YAML configuration file safely.
 
-def load_config(name: str) -> dict[str, Any]:
-    """Load one of the stable YAML business-configuration files.
-
-    Raises FileNotFoundError if the file does not exist.
+    Raises FileNotFoundError or ValueError if missing or invalid.
     """
-    path = CONFIG_DIR / name
-    if not path.exists():
-        raise FileNotFoundError(f"Required configuration file '{name}' is missing at {path}")
-    with path.open("r", encoding="utf-8") as f:
-        content = yaml.safe_load(f)
-        if content is None:
-            return {}
-        return content
+    if not file_path.is_file():
+        raise FileNotFoundError(f"Required configuration file missing: {file_path}")
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = yaml.safe_load(f)
+            if content is None:
+                return {}
+            if not isinstance(content, dict):
+                raise ValueError(f"Configuration file {file_path} must contain a top-level dictionary mapping.")
+            return content
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Failed to parse YAML file {file_path}: {exc}") from exc
+
+
+def _get_config_dir(config_dir: str | Path | None = None) -> Path:
+    """Determine the configuration directory path."""
+    if config_dir is not None:
+        return Path(config_dir)
+
+    # First check relative to this package source location
+    pkg_base_config = Path(__file__).resolve().parents[2] / "config"
+    if pkg_base_config.is_dir():
+        return pkg_base_config
+
+    # Fallback to current working directory 'config'
+    cwd_config = Path.cwd() / "config"
+    if cwd_config.is_dir():
+        return cwd_config
+
+    return pkg_base_config
 
 
 def build_context(
@@ -39,34 +50,37 @@ def build_context(
     objective: str,
     evidence: list[dict[str, Any]],
     state: dict[str, Any] | None = None,
+    config_dir: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Build a full Context Package for one account.
+    """Assemble the 5 separate context layers into a structured context package.
 
-    Guarantees:
-    - Loads products.yaml, icp.yaml, and policies.yaml.
-    - Raises FileNotFoundError if any of the configurations are missing.
-    - Separates system instructions, business context, task context, evidence, and state.
-    - Prevents mutation of input objects.
-    - Preserves evidence provenance and supplied state.
-    - Uses an empty state object when state is omitted.
+    Layers:
+    1. system_instructions
+    2. business_context (products, icp, policies)
+    3. task_context (account, objective)
+    4. retrieved_evidence
+    5. state
+
+    Raises FileNotFoundError or ValueError if required configuration is missing or invalid.
+    Input parameters are never mutated.
     """
-    # 1. Load stable configurations, raising clear errors if missing
-    products = load_config("products.yaml")
-    icp = load_config("icp.yaml")
-    policies = load_config("policies.yaml")
-
-    # 2. Avoid modifying input objects (create deep copies)
+    # Clone inputs to guarantee immutability
     account_copy = copy.deepcopy(account)
     evidence_copy = copy.deepcopy(evidence)
     state_copy = copy.deepcopy(state) if state is not None else {}
 
-    # 3. Assemble the layers
+    base_config_path = _get_config_dir(config_dir)
+
+    products_data = _load_yaml_config(base_config_path / "products.yaml")
+    icp_data = _load_yaml_config(base_config_path / "icp.yaml")
+    policies_data = _load_yaml_config(base_config_path / "policies.yaml")
+
     return {
         "system_instructions": get_system_instructions(),
         "business_context": {
-            "products": products,
-            "icp": icp,
-            "policies": policies,
+            "products": products_data,
+            "icp": icp_data,
+            "policies": policies_data,
         },
         "task_context": {
             "account": account_copy,

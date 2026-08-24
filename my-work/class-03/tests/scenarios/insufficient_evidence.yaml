@@ -1,8 +1,10 @@
 account:
-  company_name: Unknown Co
+  company_name: Unknown Manufacturing Group
+  industry: unknown
   employee_count: null
-  industry: manufacturing
-  region: europe
-objective: Evaluate Unknown Co for product fit.
+  region: unknown
+  buying_signals: []
+
+objective: Evaluate account fit when critical fields are missing.
+
 evidence: []
-state: {}

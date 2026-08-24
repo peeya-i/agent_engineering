@@ -1,16 +1,19 @@
 account:
-  company_name: Acme Manufacturing
-  employee_count: 7500
-  industry: manufacturing
+  company_name: Apex Industrial Systems
+  industry: industrial_automation
+  employee_count: 12000
   region: united_states
-objective: Evaluate Acme Manufacturing for product fit and target buyer alignment.
+  buying_signals:
+    - plant_modernization
+    - new_ai_leadership
+
+objective: Evaluate account fit for Plant Operations Platform and Industrial AI Accelerator.
+
 evidence:
-  - claim: Acme is launching a plant modernization program.
+  - claim: Apex Industrial announced a multi-plant digital transformation initiative.
     classification: verified_fact
     source:
-      name: Company Press Release
-      url: https://acme.example.com/press/modernization
-      retrieved_at: 2026-08-07
-    excerpt: Acme announced a multi-year effort to modernize plant floors.
-state:
-  current_stage: qualification
+      name: Press Release
+      url: https://example.com/apex-digital-transformation
+      retrieved_at: "2026-08-15"
+    excerpt: Apex Industrial Systems modernizes 15 manufacturing facilities.
