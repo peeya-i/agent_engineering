@@ -27,7 +27,7 @@ from adk_multiagent_systems.shared import (
     log_query_to_model,
 )
 
-# 5A: Import exit_loop here. See Task 5 in README.md.
+# DONE 5A: Import exit_loop here. See Task 5 in README.md.
 from google.adk.tools import exit_loop
 
 LOGGER = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def write_file(
 
 
 # Agents
-# 5B: Add critic under this header.
+# DONE 5B: Add critic under this header.
 critic = Agent(
     name="critic",
     model=build_model(),
@@ -162,8 +162,8 @@ file_writer = Agent(
     CASTING_REPORT:
     { casting_report? }
 
-    # 6C: Replace this entire instruction with the report-aware version.
     """,
+    # DONE 6C: Replace this entire instruction with the report-aware version.
     generate_content_config=types.GenerateContentConfig(temperature=0),
     tools=[write_file],
 )
@@ -236,7 +236,7 @@ researcher = Agent(
     after_model_callback=log_model_response,
 )
 
-# 5C: Add writers_room above film_concept_team.
+# DONE 5C: Add writers_room above film_concept_team.
 writers_room = LoopAgent(
     name="writers_room",
     description="Iterates through research and writing to improve a movie plot outline.",
@@ -248,9 +248,9 @@ film_concept_team = SequentialAgent(
     name="film_concept_team",
     description="Write a film plot outline and save it as a text file.",
     # sub_agents=[researcher, screenwriter, file_writer],
-    # 5D: Replace the list above with [writers_room, file_writer].
+    # DONE 5D: Replace the list above with [writers_room, file_writer].
     sub_agents=[writers_room, preproduction_team, file_writer],
-    # 6B: Later replace it with
+    # DONE 6B: Later replace it with
     #           [writers_room, preproduction_team, file_writer].
 )
 
