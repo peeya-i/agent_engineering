@@ -12,8 +12,11 @@ from google.adk.integrations.langchain import LangchainTool
 from google.adk.models import Gemini
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
+import wikipedia
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
+
+wikipedia.set_user_agent("MoviePitchAgent/1.0 (agent_engineering_lab)")
 
 from adk_multiagent_systems.shared import (
     MODEL_NAME,
@@ -25,6 +28,7 @@ from adk_multiagent_systems.shared import (
 )
 
 # TODO 5A: Import exit_loop here. See Task 5 in README.md.
+from google.adk.tools import exit_loop
 
 LOGGER = logging.getLogger(__name__)
 OUTPUT_DIR = PROJECT_ROOT / "movie_pitches"
@@ -72,6 +76,34 @@ def write_file(
 
 # Agents
 # TODO 5B: Add critic under this header.
+critic = Agent(
+    name="critic",
+    model=build_model(),
+    description="Reviews the outline so that it can be improved.",
+    instruction="""
+    INSTRUCTIONS:
+    Consider these questions about the PLOT_OUTLINE:
+    - Does it have a satisfying three-act cinematic structure?
+    - Are the characters' struggles engaging?
+    - Does it feel grounded in a real historical period?
+    - Does it incorporate useful historical details from RESEARCH?
+
+    If the PLOT_OUTLINE does a good job on these questions, call exit_loop.
+    If significant improvements can be made, call append_to_state with field
+    'CRITICAL_FEEDBACK' and add precise feedback for the next pass.
+    Explain your decision and briefly summarize the feedback provided.
+
+    PLOT_OUTLINE:
+    { PLOT_OUTLINE? }
+
+    RESEARCH:
+    { research? }
+    """,
+    before_model_callback=log_query_to_model,
+    after_model_callback=log_model_response,
+    tools=[append_to_state, exit_loop],
+)
+
 # TODO 6A: Later add the two report agents and ParallelAgent under this header.
 
 file_writer = Agent(
@@ -168,12 +200,19 @@ researcher = Agent(
 )
 
 # TODO 5C: Add writers_room above film_concept_team.
+writers_room = LoopAgent(
+    name="writers_room",
+    description="Iterates through research and writing to improve a movie plot outline.",
+    sub_agents=[researcher, screenwriter, critic],
+    max_iterations=5,
+)
 
 film_concept_team = SequentialAgent(
     name="film_concept_team",
     description="Write a film plot outline and save it as a text file.",
-    sub_agents=[researcher, screenwriter, file_writer],
+    # sub_agents=[researcher, screenwriter, file_writer],
     # TODO 5D: Replace the list above with [writers_room, file_writer].
+    sub_agents=[writers_room, file_writer],
     # TODO 6B: Later replace it with
     #           [writers_room, preproduction_team, file_writer].
 )

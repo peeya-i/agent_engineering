@@ -1,8 +1,0 @@
-.env
-.venv/
-.pip-cache/
-*.egg-info/
-__pycache__/
-*.py[cod]
-.DS_Store
-movie_pitches/*.txt
