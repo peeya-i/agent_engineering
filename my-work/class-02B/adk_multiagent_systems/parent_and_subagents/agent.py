@@ -25,7 +25,7 @@ def build_model() -> Gemini:
 
 
 # Tools
-# TODO 3A: Add save_attractions_to_state here.
+# DONE 3A: Add save_attractions_to_state here.
 # The exact code is in Task 3 of README.md.
 def save_attractions_to_state(
     tool_context: ToolContext,
@@ -51,11 +51,11 @@ attractions_planner = Agent(
         - If they ask to view the list, provide a bulleted list of
           {attractions?} and then suggest some more.
     """,
-    # TODO 3C: Add the two state-aware instruction bullets here.
+    # DONE 3C: Add the two state-aware instruction bullets here.
     before_model_callback=log_query_to_model,
     after_model_callback=log_model_response,
 
-    # TODO 3B: Add tools=[save_attractions_to_state] below this line.
+    # DONE 3B: Add tools=[save_attractions_to_state] below this line.
     tools=[save_attractions_to_state],
 )
 
@@ -80,7 +80,7 @@ root_agent = Agent(
     name="steering",
     model=build_model(),
     description="Start a user on a travel adventure.",
-    # TODO 2B: Add the explicit transfer instructions here.
+    # DONE 2B: Add the explicit transfer instructions here.
     instruction="""
         Ask the user if they know where they'd like to travel
         or if they need some help deciding.
@@ -89,7 +89,7 @@ root_agent = Agent(
         If they know what country they'd like to visit, send them to 'attractions_planner'.
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0),
-    # TODO 2A: Add the sub_agents parameter below this line.
+    # DONE 2A: Add the sub_agents parameter below this line.
     sub_agents=[travel_brainstormer, attractions_planner],
 )
 

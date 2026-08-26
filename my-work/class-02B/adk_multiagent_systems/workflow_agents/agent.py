@@ -27,7 +27,7 @@ from adk_multiagent_systems.shared import (
     log_query_to_model,
 )
 
-# TODO 5A: Import exit_loop here. See Task 5 in README.md.
+# 5A: Import exit_loop here. See Task 5 in README.md.
 from google.adk.tools import exit_loop
 
 LOGGER = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def write_file(
 
 
 # Agents
-# TODO 5B: Add critic under this header.
+# 5B: Add critic under this header.
 critic = Agent(
     name="critic",
     model=build_model(),
@@ -88,7 +88,7 @@ critic = Agent(
     - Does it feel grounded in a real historical period?
     - Does it incorporate useful historical details from RESEARCH?
 
-    If the PLOT_OUTLINE does a good job on these questions, call exit_loop.
+    If the PLOT_OUTLINE does a good job on these questions, call the 'exit_loop' tool function.
     If significant improvements can be made, call append_to_state with field
     'CRITICAL_FEEDBACK' and add precise feedback for the next pass.
     Explain your decision and briefly summarize the feedback provided.
@@ -104,7 +104,41 @@ critic = Agent(
     tools=[append_to_state, exit_loop],
 )
 
-# TODO 6A: Later add the two report agents and ParallelAgent under this header.
+# 6A: Later add the two report agents and ParallelAgent under this header.
+box_office_researcher = Agent(
+    name="box_office_researcher",
+    model=build_model(),
+    description="Considers the box-office potential of this film.",
+    instruction="""
+    PLOT_OUTLINE:
+    { PLOT_OUTLINE? }
+
+    INSTRUCTIONS:
+    Write a report on the box-office potential of a movie like the one in
+    PLOT_OUTLINE, using the reported performance of comparable recent films.
+    """,
+    output_key="box_office_report",
+)
+
+casting_agent = Agent(
+    name="casting_agent",
+    model=build_model(),
+    description="Generates casting ideas for this film.",
+    instruction="""
+    PLOT_OUTLINE:
+    { PLOT_OUTLINE? }
+
+    INSTRUCTIONS:
+    Generate casting ideas for the characters in PLOT_OUTLINE. Suggest actors
+    who have received positive feedback in similar roles, and explain the fit.
+    """,
+    output_key="casting_report",
+)
+
+preproduction_team = ParallelAgent(
+    name="preproduction_team",
+    sub_agents=[box_office_researcher, casting_agent],
+)
 
 file_writer = Agent(
     name="file_writer",
@@ -112,20 +146,23 @@ file_writer = Agent(
     description="Creates marketing details and saves a pitch document.",
     instruction="""
     INSTRUCTIONS:
-    - Create a marketable, contemporary movie title suggestion for the movie
-      described in the PLOT_OUTLINE. If a title has been suggested in
-      PLOT_OUTLINE, you can use it, or replace it with a better one.
-    - Use your 'write_file' tool to create a new txt file with these arguments:
-        - For filename, use the movie title.
-        - Write to the 'movie_pitches' directory.
-        - For content, extract from PLOT_OUTLINE:
-            - A logline
-            - A synopsis or plot outline
+    - Create a marketable, contemporary movie title for the movie described in
+    PLOT_OUTLINE. Reuse an existing title only if it is strong.
+    - Use write_file to create a new txt file:
+        - Use the movie title as filename.
+        - Write to the movie_pitches directory.
+        - Include the PLOT_OUTLINE, BOX_OFFICE_REPORT, and CASTING_REPORT.
 
     PLOT_OUTLINE:
     { PLOT_OUTLINE? }
 
-    # TODO 6C: Replace this entire instruction with the report-aware version.
+    BOX_OFFICE_REPORT:
+    { box_office_report? }
+
+    CASTING_REPORT:
+    { casting_report? }
+
+    # 6C: Replace this entire instruction with the report-aware version.
     """,
     generate_content_config=types.GenerateContentConfig(temperature=0),
     tools=[write_file],
@@ -199,7 +236,7 @@ researcher = Agent(
     after_model_callback=log_model_response,
 )
 
-# TODO 5C: Add writers_room above film_concept_team.
+# 5C: Add writers_room above film_concept_team.
 writers_room = LoopAgent(
     name="writers_room",
     description="Iterates through research and writing to improve a movie plot outline.",
@@ -211,9 +248,9 @@ film_concept_team = SequentialAgent(
     name="film_concept_team",
     description="Write a film plot outline and save it as a text file.",
     # sub_agents=[researcher, screenwriter, file_writer],
-    # TODO 5D: Replace the list above with [writers_room, file_writer].
-    sub_agents=[writers_room, file_writer],
-    # TODO 6B: Later replace it with
+    # 5D: Replace the list above with [writers_room, file_writer].
+    sub_agents=[writers_room, preproduction_team, file_writer],
+    # 6B: Later replace it with
     #           [writers_room, preproduction_team, file_writer].
 )
 
