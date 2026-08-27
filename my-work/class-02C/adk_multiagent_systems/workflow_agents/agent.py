@@ -13,8 +13,11 @@ from google.adk.models import Gemini
 from google.adk.tools import exit_loop
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
+import wikipedia
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
+
+wikipedia.set_user_agent("class_02c_adk2/1.0 (lab@example.com)")
 
 from adk_multiagent_systems.shared import (
     MODEL_NAME,

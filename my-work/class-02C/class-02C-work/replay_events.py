@@ -68,8 +68,9 @@ def planned_timestamps(events: list[dict[str, Any]], speed: float) -> list[int]:
 def emit(events: list[dict[str, Any]], project_id: str, speed: float) -> None:
     os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
     os.environ["OTEL_SERVICE_NAME"] = "class-02c-replay"
+    # CHANGE ADDED PEEYA to include project ID
     os.environ["OTEL_RESOURCE_ATTRIBUTES"] = (
-        "deployment.environment=classroom,class.name=02C,replay.mode=telemetry_only"
+        f"deployment.environment=classroom,class.name=02C,replay.mode=telemetry_only,gcp.project_id={project_id}"
     )
 
     from google.adk.telemetry.google_cloud import get_gcp_exporters

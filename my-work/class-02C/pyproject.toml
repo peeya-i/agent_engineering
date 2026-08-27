@@ -7,7 +7,7 @@ name = "class-02c-adk2"
 version = "1.2.0"
 description = "Completed ADK 2.x multi-agent application used as the system under observation in the Class 02C observability lab."
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 dependencies = [
   "google-adk[gcp,otel-gcp]==2.6.0",
   "langchain-community>=0.4.1,<0.5",

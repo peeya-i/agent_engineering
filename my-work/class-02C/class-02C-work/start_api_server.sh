@@ -39,7 +39,8 @@ set +a
 
 export GOOGLE_CLOUD_PROJECT="$PROJECT_ID"
 export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-class-02c-live}"
-export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=classroom,class.name=02C}"
+# CHANGE ADDED PEEYA to include project ID
+export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=classroom,class.name=02C,gcp.project_id=$PROJECT_ID}"
 export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="${OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT:-NO_CONTENT}"
 
 exec adk api_server \
