@@ -8,7 +8,6 @@ description: >-
 ---
 
 # Unit Test Generator Skill
-
 This skill enables the agent to generate unit test stubs for user-provided
 code, covering key testing patterns.
 
