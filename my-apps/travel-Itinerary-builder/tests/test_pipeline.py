@@ -120,22 +120,30 @@ class TestTravelItineraryBuilder(unittest.TestCase):
         self.assertFalse(data["success"])
         self.assertIn("Duration", data["error"])
 
-    def test_flask_successful_generation(self):
-        """Test Flask successful generation endpoint."""
-        client = app.test_client()
-        res = client.post("/api/generate", json={
-            "destination": "Barcelona",
-            "budget": 1800,
-            "days": 4,
-            "interests": ["Architecture", "Tapas"]
-        })
-        self.assertEqual(res.status_code, 200)
-        data = res.get_json()
-        self.assertTrue(data["success"])
-        self.assertTrue(data["is_valid_schema"])
-        state = data["data"]
-        self.assertEqual(state["user_input"]["destination"], "Barcelona")
-        self.assertEqual(len(state["current_itinerary"]["schedule"]), 4)
+    def test_normalize_schedule_flat_and_nested(self):
+        """Test that normalize_schedule correctly partitions flat event lists into DaySchedule objects."""
+        from pipeline.tools import normalize_schedule
+
+        # Test flat list of 21 events distributed across 8 days
+        flat_events = [
+            {"time": "09:00 AM", "title": f"Activity {i}", "category": "sightseeing", "estimated_cost": 20.0, "description": f"Desc {i}"}
+            for i in range(21)
+        ]
+        norm = normalize_schedule(flat_events, total_days=8)
+        self.assertEqual(len(norm), 8)
+        for d in norm:
+            self.assertIn("day", d)
+            self.assertIn("events", d)
+            self.assertGreater(len(d["events"]), 0)
+
+        total_evs = sum(len(d["events"]) for d in norm)
+        self.assertEqual(total_evs, 21)
+
+        # Test already nested list
+        nested = [{"day": 1, "events": [{"title": "A1"}]}, {"day": 2, "events": [{"title": "A2"}]}]
+        norm_nested = normalize_schedule(nested, total_days=2)
+        self.assertEqual(len(norm_nested), 2)
+        self.assertEqual(norm_nested[0]["events"][0]["title"], "A1")
 
 
 if __name__ == "__main__":

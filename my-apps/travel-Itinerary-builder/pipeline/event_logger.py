@@ -14,8 +14,8 @@ from google.adk.tools import BaseTool, ToolContext
 
 logger = logging.getLogger(__name__)
 
-# Top-level events.json path
-DEFAULT_EVENTS_FILE = Path(__file__).resolve().parent.parent / "events.json"
+# Artifacts events.json path
+DEFAULT_EVENTS_FILE = Path(__file__).resolve().parent.parent / "artifacts" / "events.json"
 
 
 def serialize_for_json(obj: Any) -> Any:

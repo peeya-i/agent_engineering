@@ -104,7 +104,7 @@ def create_scheduler(model: Optional[str] = None) -> Agent:
     """Agent that builds day-by-day sequence and refines based on critic feedback."""
     model_name = model or get_gemini_model()
     instruction = """You are the Scheduler agent in the Optimization Room.
-Your goal is to build a realistic, day-by-day travel schedule and calculate total estimated costs.
+Your goal is to build a realistic, day-by-day travel schedule covering all days from Day 1 to Day N and calculate total estimated costs.
 
 Read the central state:
 - `user_input`: destination, days, budget, interests
@@ -121,13 +121,33 @@ Calculate `total_estimated_cost`:
 - Selected Activities & Dining cost = sum of event costs across all days
 
 Construct a detailed day-by-day schedule:
-- Day 1 to Day N
-- Each day must have structured events with:
-  - time (e.g. "09:00 AM", "12:30 PM", "03:00 PM", "07:00 PM")
-  - title (e.g. "Morning: Senso-ji Temple & Nakamise-dori")
-  - category ("transit", "lodging", "sightseeing", "dining", "culture")
-  - estimated_cost (float in USD)
-  - description
+- Must contain an entry for each day from Day 1 to Day N (where N = user_input.days).
+- The `schedule` parameter MUST be a list of day objects with `day` (integer) and `events` (list of event objects):
+  [
+    {
+      "day": 1,
+      "events": [
+        {
+          "time": "09:00 AM",
+          "title": "Morning: Arrival & City Exploration",
+          "category": "sightseeing",
+          "estimated_cost": 25.0,
+          "description": "Visit historic downtown landmarks"
+        },
+        {
+          "time": "01:00 PM",
+          "title": "Lunch: Regional Cuisine",
+          "category": "dining",
+          "estimated_cost": 20.0,
+          "description": "Authentic local specialty lunch"
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "events": [...]
+    }
+  ]
 
 Call `save_itinerary_schedule(schedule=[...], total_estimated_cost=...)` to update state.
 Always execute the tool call."""

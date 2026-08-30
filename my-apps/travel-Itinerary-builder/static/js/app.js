@@ -317,14 +317,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Render Daily Schedule
         scheduleContainer.innerHTML = '';
-        if (schedule.length === 0) {
+
+        // Normalize schedule if needed
+        let normalizedSchedule = [];
+        if (Array.isArray(schedule) && schedule.length > 0) {
+            const hasNestedEvents = schedule.every(item => item && Array.isArray(item.events));
+            if (hasNestedEvents) {
+                normalizedSchedule = schedule;
+            } else {
+                // Flat list of events
+                const totalDays = parseInt(userInput.days, 10) || 1;
+                const eventsPerDay = Math.max(1, Math.ceil(schedule.length / totalDays));
+                for (let d = 1; d <= totalDays; d++) {
+                    const dayEvents = schedule.slice((d - 1) * eventsPerDay, d * eventsPerDay);
+                    normalizedSchedule.push({
+                        day: d,
+                        events: dayEvents.length > 0 ? dayEvents : [{
+                            time: '10:00 AM',
+                            title: `Day ${d} Local Exploration`,
+                            category: 'sightseeing',
+                            estimated_cost: 0.0,
+                            description: 'Explore local sights, cafes, and neighborhoods.'
+                        }]
+                    });
+                }
+            }
+        }
+
+        if (normalizedSchedule.length === 0) {
             scheduleContainer.innerHTML = '<div class="day-card"><p class="text-muted">No schedule items generated.</p></div>';
         } else {
-            schedule.forEach(dayPlan => {
+            normalizedSchedule.forEach((dayPlan, index) => {
                 const dayCard = document.createElement('div');
                 dayCard.className = 'day-card';
+                const dayNum = dayPlan.day !== undefined ? dayPlan.day : (index + 1);
 
-                const dayEvents = dayPlan.events || [];
+                const dayEvents = Array.isArray(dayPlan.events) ? dayPlan.events : [];
                 const dayCost = dayEvents.reduce((acc, ev) => acc + (parseFloat(ev.estimated_cost) || 0), 0);
 
                 let eventsHtml = dayEvents.map(ev => {
@@ -335,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `
                         <div class="event-item">
                             <div class="event-time">
-                                <i class="fa-regular fa-clock"></i> ${ev.time || 'All Day'}
+                                <i class="fa-regular fa-clock"></i> ${escapeHtml(ev.time || 'All Day')}
                             </div>
                             <div class="event-content">
                                 <h5>${escapeHtml(ev.title || 'Activity')}</h5>
@@ -349,11 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 dayCard.innerHTML = `
                     <div class="day-header">
-                        <div class="day-title"><i class="fa-solid fa-calendar-day"></i> Day ${dayPlan.day}</div>
+                        <div class="day-title"><i class="fa-solid fa-calendar-day"></i> Day ${dayNum}</div>
                         <div class="day-total">Daily Estimated: $${dayCost.toFixed(2)}</div>
                     </div>
                     <div class="events-list">
-                        ${eventsHtml}
+                        ${eventsHtml || '<p class="text-muted" style="padding: 1rem;">No events scheduled for this day.</p>'}
                     </div>
                 `;
                 scheduleContainer.appendChild(dayCard);
@@ -419,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
             totalLodging = perNight * (userInput.days || 1);
         }
 
-        const totalActivitiesCost = schedule.reduce((sum, day) => {
+        const totalActivitiesCost = normalizedSchedule.reduce((sum, day) => {
             return sum + (day.events || []).reduce((dSum, ev) => dSum + (parseFloat(ev.estimated_cost) || 0), 0);
         }, 0);
 

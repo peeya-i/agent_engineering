@@ -68,26 +68,137 @@ def save_activity_research(
     return msg
 
 
+import re
+
+
+def normalize_schedule(schedule: Any, total_days: int = 1) -> List[Dict[str, Any]]:
+    """Normalizes any schedule structure into standard List[DaySchedule]:
+    [{"day": 1, "events": [...]}, {"day": 2, "events": [...]}, ...]
+    """
+    num_days = max(1, total_days)
+    if not isinstance(schedule, list) or not schedule:
+        return [{"day": d, "events": []} for d in range(1, num_days + 1)]
+
+    # Check if already in standard [{"day": 1, "events": [...]}, ...] format
+    is_standard = True
+    for item in schedule:
+        if not isinstance(item, dict) or "events" not in item or not isinstance(item["events"], list):
+            is_standard = False
+            break
+    if is_standard and len(schedule) > 0:
+        normalized = []
+        for idx, item in enumerate(schedule):
+            day_num = item.get("day", idx + 1)
+            try:
+                day_num = int(day_num)
+            except (ValueError, TypeError):
+                day_num = idx + 1
+            normalized.append({
+                "day": day_num,
+                "events": item.get("events", [])
+            })
+        return normalized
+
+    # Extract all flat events or detect day numbers
+    flat_events: List[Dict[str, Any]] = []
+    explicit_day_groups: Dict[int, List[Dict[str, Any]]] = {}
+
+    for idx, item in enumerate(schedule):
+        if not isinstance(item, dict):
+            continue
+
+        # If it has an events list inside
+        if "events" in item and isinstance(item["events"], list):
+            d = item.get("day", idx + 1)
+            try:
+                d = int(d)
+            except (ValueError, TypeError):
+                d = idx + 1
+            explicit_day_groups.setdefault(d, []).extend(item["events"])
+            continue
+
+        # If it has day field
+        if "day" in item:
+            try:
+                d = int(item["day"])
+                explicit_day_groups.setdefault(d, []).append(item)
+                continue
+            except (ValueError, TypeError):
+                pass
+
+        # Check title for "Day X"
+        title = item.get("title", "")
+        day_match = re.search(r'\bDay\s*(\d+)\b', title, re.IGNORECASE)
+        if day_match:
+            d = int(day_match.group(1))
+            explicit_day_groups.setdefault(d, []).append(item)
+            continue
+
+        flat_events.append(item)
+
+    if explicit_day_groups and not flat_events:
+        return [{"day": d, "events": explicit_day_groups[d]} for d in sorted(explicit_day_groups.keys())]
+
+    result_days: Dict[int, List[Dict[str, Any]]] = {d: [] for d in range(1, num_days + 1)}
+
+    for d, evs in explicit_day_groups.items():
+        if d in result_days:
+            result_days[d].extend(evs)
+        else:
+            result_days[d] = evs
+
+    if flat_events:
+        total_evs = len(flat_events)
+        base_count = total_evs // num_days
+        remainder = total_evs % num_days
+        idx = 0
+        for d in range(1, num_days + 1):
+            count = base_count + (1 if d <= remainder else 0)
+            day_slice = flat_events[idx : idx + count]
+            idx += count
+            if not day_slice and not result_days[d]:
+                day_slice = [{
+                    "time": "10:00 AM",
+                    "title": f"Day {d} Local Exploration",
+                    "category": "sightseeing",
+                    "estimated_cost": 0.0,
+                    "description": "Explore local neighborhood sights and culture."
+                }]
+            result_days[d].extend(day_slice)
+
+    return [{"day": d, "events": result_days[d]} for d in sorted(result_days.keys())]
+
+
 def save_itinerary_schedule(
     tool_context: ToolContext,
     schedule: List[Dict[str, Any]],
     total_estimated_cost: float
 ) -> str:
-    """Saves the structured multi-day itinerary and total estimated cost into central state."""
+    """Saves the structured multi-day itinerary and total estimated cost into central state.
+    
+    Parameters:
+        schedule: A list of day objects with Day numbers and events list, e.g.
+                  [{"day": 1, "events": [{"time": "09:00 AM", "title": "...", "category": "...", "estimated_cost": 20.0, "description": "..."}]}]
+        total_estimated_cost: Total cost in USD (flights + hotel * days + all activity costs).
+    """
+    user_input = tool_context.state.get("user_input", {})
+    days = int(user_input.get("days", 1))
+    normalized_schedule = normalize_schedule(schedule, total_days=days)
+
     itinerary = {
         "total_estimated_cost": float(total_estimated_cost),
-        "schedule": schedule
+        "schedule": normalized_schedule
     }
     tool_context.state["current_itinerary"] = itinerary
-    msg = f"Successfully saved itinerary for {len(schedule)} days with total cost ${total_estimated_cost:.2f}."
+    msg = f"Successfully saved itinerary for {len(normalized_schedule)} days with total cost ${total_estimated_cost:.2f}."
     append_event_to_json({
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "event_type": "tool_execution",
         "agent": "Scheduler",
         "tool": "save_itinerary_schedule",
-        "days_count": len(schedule),
+        "days_count": len(normalized_schedule),
         "total_estimated_cost": float(total_estimated_cost),
-        "schedule": schedule,
+        "schedule": normalized_schedule,
         "result": msg
     })
     return msg

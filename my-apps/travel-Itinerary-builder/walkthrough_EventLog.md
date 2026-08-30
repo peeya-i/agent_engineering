@@ -6,8 +6,8 @@ The **Travel Itinerary Builder** application has been implemented according to a
 
 ## 🌟 What Was Built
 
-### 1. JSON Event Logging (`events.json`, `pipeline/event_logger.py`)
-- Automatically records **all messages sent to Gemini models**, **all model responses**, **all tool executions**, and **pipeline lifecycle events** into [events.json](file:///home/pi-net/Documents/agent_eng_labs/agent_engineering/my-work/travel-Itinerary-builder/events.json) in the top level folder.
+### 1. JSON Event Logging (`artifacts/events.json`, `pipeline/event_logger.py`)
+- Automatically records **all messages sent to Gemini models**, **all model responses**, **all tool executions**, and **pipeline lifecycle events** into [artifacts/events.json](file:///home/pi-net/Documents/agent_eng_labs/agent_engineering/my-apps/travel-Itinerary-builder/artifacts/events.json).
 - Recorded event types:
   - `model_request`: Outgoing prompt, history, system instructions, model parameters.
   - `model_response`: Incoming LLM text, model versions, usage metadata, and function calls.

@@ -13,6 +13,7 @@ from google.adk.sessions import InMemorySessionService
 
 from .state import create_initial_state, validate_state
 from .agents import create_travel_pipeline
+from .tools import normalize_schedule
 from .event_logger import JsonEventLoggerPlugin, append_event_to_json
 
 # Load .env file
@@ -271,6 +272,11 @@ async def run_itinerary_pipeline_async(
                 final_state["raw_research"] = fallback["raw_research"]
             final_state["budget_approved"] = fallback["budget_approved"]
             final_state["critic_feedback"] = fallback["critic_feedback"]
+        else:
+            final_state["current_itinerary"]["schedule"] = normalize_schedule(
+                schedule,
+                total_days=int(initial_state["user_input"].get("days", 1))
+            )
 
         append_event_to_json({
             "timestamp": datetime.now(timezone.utc).isoformat(),
