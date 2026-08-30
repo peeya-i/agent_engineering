@@ -1,0 +1,63 @@
+# Travel Itinerary Builder
+
+## Overview
+Build Travel Itinerary Builder as an autonomous, multi-agent AI pipeline designed to generate structured, multi-day vacation plans. The system takes user preferences (destination, budget, duration, interests) and produces a complete itinerary while cross-referencing scheduling conflicts and enforcing strict budgetary boundaries. Build the app to use Gemini API. It should get the API Key from the environment variable GEMINI_API_KEY and model name from the environment variable GEMINI_MODEL.
+
+Use flask to build the frontend for this application. The app will ask for the destination, budget, duration, and interests. If the information is missing, it will prompt the user to provide it. If the data is valid, the app will call the backend API to generate the itinerary and display it in a user-friendly format.
+
+## Architecture
+The application follows a hybrid orchestration pattern, utilizing a **Sequential Pipeline** that coordinates a **Parallel Discovery Phase** followed by an iterative **Loop Refinement Phase**.
+
+### 1. Parallel Agent (Discovery Team)
+Orchestrated by the `ParallelAgent`, the following sub-agents execute concurrently:
+- **FlightResearcher:** Locates transport, travel times, and costs.
+- **HotelResearcher:** Finds lodging matching interests and neighborhood safety.
+- **ActivityPlanner:** Compiles landmarks, restaurants, and tours.
+
+### 2. Loop Agent (Optimization Room)
+Orchestrated by the `LoopAgent`, these agents refine the itinerary:
+- **Scheduler:** Reads research, builds the day-by-day sequence, and calculates total costs.
+- **BudgetEnforcer:** Validates the itinerary against the user's budget.
+
+### Loop Constraints
+- **Success:** If cost ≤ budget, `budget_approved` is set to `true` and the loop terminates.
+- **Failure:** If cost > budget, the agent provides `critic_feedback` (e.g., "Replace 5-star hotel with 3-star"), sets `budget_approved` to `false`, and triggers the Scheduler for the next iteration.
+- **Cap:** Maximum of 5 iterations.
+
+## Global State Schema
+All agents interact with a single, centralized dictionary state:
+
+```json
+{
+  "user_input": {
+    "destination": "string",
+    "budget": "float",
+    "days": "integer",
+    "interests": ["string"]
+  },
+  "raw_research": {
+    "flights": [],
+    "hotels": [],
+    "activities": []
+  },
+  "current_itinerary": {
+    "total_estimated_cost": "float",
+    "schedule": [
+      {
+        "day": "integer",
+        "events": []
+      }
+    ]
+  },
+  "critic_feedback": "string",
+  "budget_approved": "boolean"
+}
+```
+
+##  Student Assignment Milestones
+
+The implementation is evaluated based on three milestones:
+
+- **Structural Integrity (30%)**: Must explicitly declare ParallelAgent and LoopAgent frameworks.
+- **Context Extraction & State Management (40%)**: The Scheduler must read critic_feedback from prior iterations to modify the trip successfully.
+- **Graceful Failure Handling (30%)**: Must handle impossible inputs (e.g., extremely low budgets) without crashing.

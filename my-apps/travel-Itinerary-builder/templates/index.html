@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Autonomous Multi-Agent AI Travel Itinerary Builder powered by Google Gemini and ADK.">
+    <title>Travel Itinerary Builder | AI Agent Pipeline</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-container">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <i class="fa-solid fa-compass"></i>
+                    </div>
+                    <div class="brand-text">
+                        <h1>VoyageGen</h1>
+                        <span class="badge-tag">Multi-Agent AI Pipeline</span>
+                    </div>
+                </div>
+                <div class="header-status">
+                    <div class="status-pill {% if has_api_key %}active{% else %}demo{% endif %}">
+                        <span class="status-dot"></span>
+                        <span>Model: <strong>{{ gemini_model }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-container">
+            <!-- Hero Banner -->
+            <section class="hero-section">
+                <div class="hero-content">
+                    <h2>Autonomous Multi-Agent Travel Planner</h2>
+                    <p>Enter your travel preferences below. Our parallel discovery researchers and iterative budget enforcers will craft your optimal vacation plan.</p>
+                </div>
+            </section>
+
+            <!-- Form & Pipeline Workflow Grid -->
+            <div class="content-grid">
+                <!-- Input Form Card -->
+                <div class="form-card glass-panel">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-sliders"></i>
+                            <h3>Trip Preferences</h3>
+                        </div>
+                        <span class="step-indicator">Step 1</span>
+                    </div>
+
+                    <form id="itineraryForm" novalidate>
+                        <!-- Destination Field -->
+                        <div class="form-group">
+                            <label for="destinationInput">
+                                <i class="fa-solid fa-location-dot"></i> Destination
+                                <span class="required">*</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <input 
+                                    type="text" 
+                                    id="destinationInput" 
+                                    name="destination" 
+                                    placeholder="e.g. Kyoto, Japan or Paris, France" 
+                                    required
+                                    autocomplete="off"
+                                >
+                            </div>
+                            <div class="field-error" id="destinationError"></div>
+                        </div>
+
+                        <!-- Budget & Duration Row -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="budgetInput">
+                                    <i class="fa-solid fa-dollar-sign"></i> Total Budget (USD)
+                                    <span class="required">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input 
+                                        type="number" 
+                                        id="budgetInput" 
+                                        name="budget" 
+                                        placeholder="e.g. 2000" 
+                                        min="50" 
+                                        step="50" 
+                                        required
+                                    >
+                                </div>
+                                <div class="field-error" id="budgetError"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="daysInput">
+                                    <i class="fa-solid fa-calendar-days"></i> Duration (Days)
+                                    <span class="required">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input 
+                                        type="number" 
+                                        id="daysInput" 
+                                        name="days" 
+                                        placeholder="e.g. 5" 
+                                        min="1" 
+                                        max="30" 
+                                        required
+                                    >
+                                </div>
+                                <div class="field-error" id="daysError"></div>
+                            </div>
+                        </div>
+
+                        <!-- Interests Multi-Tag Section -->
+                        <div class="form-group">
+                            <label>
+                                <i class="fa-solid fa-heart"></i> Travel Interests & Themes
+                            </label>
+                            <div class="tags-selector" id="interestTags">
+                                <button type="button" class="tag-chip active" data-tag="Historic Culture">Historic Culture</button>
+                                <button type="button" class="tag-chip active" data-tag="Food & Dining">Food & Dining</button>
+                                <button type="button" class="tag-chip" data-tag="Museums & Art">Museums & Art</button>
+                                <button type="button" class="tag-chip" data-tag="Nature & Hiking">Nature & Hiking</button>
+                                <button type="button" class="tag-chip" data-tag="Nightlife">Nightlife</button>
+                                <button type="button" class="tag-chip" data-tag="Shopping">Shopping</button>
+                                <button type="button" class="tag-chip" data-tag="Relaxation">Relaxation</button>
+                                <button type="button" class="tag-chip" data-tag="Photography">Photography</button>
+                            </div>
+                            <div class="custom-tag-input">
+                                <input type="text" id="customInterestInput" placeholder="Add custom interest (press Enter)...">
+                                <button type="button" id="addInterestBtn" class="btn-sm"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div class="selected-interests-preview" id="selectedInterestsDisplay">
+                                <small>Selected: <span id="interestsListText">Historic Culture, Food & Dining</span></small>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submitBtn" class="btn-primary">
+                            <span class="btn-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Itinerary</span>
+                            <span class="btn-loader" style="display: none;">
+                                <i class="fa-solid fa-circle-notch fa-spin"></i> Synthesizing Pipeline...
+                            </span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Pipeline Architecture Visualization -->
+                <div class="pipeline-viz-card glass-panel">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-network-wired"></i>
+                            <h3>Agent Architecture</h3>
+                        </div>
+                        <span class="badge-purple">ADK Orchestration</span>
+                    </div>
+
+                    <div class="agent-pipeline-flow">
+                        <!-- Phase 1: Parallel Discovery -->
+                        <div class="pipeline-phase" id="phaseDiscovery">
+                            <div class="phase-header">
+                                <div class="phase-badge"><i class="fa-solid fa-bolt"></i> Phase 1: Parallel Discovery</div>
+                                <span class="phase-status" id="discoveryStatus">Idle</span>
+                            </div>
+                            <div class="subagents-grid">
+                                <div class="subagent-pill" id="agentFlight">
+                                    <i class="fa-solid fa-plane-departure"></i>
+                                    <span>FlightResearcher</span>
+                                </div>
+                                <div class="subagent-pill" id="agentHotel">
+                                    <i class="fa-solid fa-hotel"></i>
+                                    <span>HotelResearcher</span>
+                                </div>
+                                <div class="subagent-pill" id="agentActivity">
+                                    <i class="fa-solid fa-map-location-dot"></i>
+                                    <span>ActivityPlanner</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Phase Arrow -->
+                        <div class="flow-connector">
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </div>
+
+                        <!-- Phase 2: Loop Optimization Room -->
+                        <div class="pipeline-phase" id="phaseLoop">
+                            <div class="phase-header">
+                                <div class="phase-badge"><i class="fa-solid fa-rotate"></i> Phase 2: Loop Optimization (Max 5x)</div>
+                                <span class="phase-status" id="loopStatus">Idle</span>
+                            </div>
+                            <div class="subagents-grid loop-grid">
+                                <div class="subagent-pill" id="agentScheduler">
+                                    <i class="fa-solid fa-calendar-check"></i>
+                                    <span>Scheduler</span>
+                                </div>
+                                <div class="loop-arrow">
+                                    <i class="fa-solid fa-repeat"></i>
+                                </div>
+                                <div class="subagent-pill" id="agentBudget">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                    <span>BudgetEnforcer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline Logs Feed -->
+                    <div class="pipeline-logs-card">
+                        <div class="logs-header">
+                            <i class="fa-solid fa-terminal"></i>
+                            <span>Agent Activity Log</span>
+                        </div>
+                        <div class="logs-terminal" id="logsTerminal">
+                            <div class="log-line text-muted">Ready to generate. Submit your trip preferences to begin.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section (Dynamic) -->
+            <section id="resultsSection" class="results-section" style="display: none;">
+                <!-- Summary Card -->
+                <div class="summary-card glass-panel" id="summaryCard">
+                    <div class="summary-top">
+                        <div class="destination-hero">
+                            <span class="trip-destination-tag" id="resDestination">Tokyo, Japan</span>
+                            <h2 id="resTripTitle">4-Day Vacation Itinerary</h2>
+                        </div>
+                        <div class="export-actions">
+                            <button class="btn-outline" id="copyJsonBtn" title="Copy JSON State">
+                                <i class="fa-solid fa-code"></i> JSON State
+                            </button>
+                            <button class="btn-outline" onclick="window.print()" title="Print Itinerary">
+                                <i class="fa-solid fa-print"></i> Print
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics Grid -->
+                    <div class="metrics-grid">
+                        <div class="metric-box">
+                            <span class="metric-label">Estimated Total</span>
+                            <span class="metric-value highlight" id="resTotalCost">$0.00</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Target Budget</span>
+                            <span class="metric-value" id="resBudget">$0.00</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Variance</span>
+                            <span class="metric-value" id="resVariance">$0.00</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Budget Status</span>
+                            <span class="metric-badge" id="resApprovalBadge">Approved</span>
+                        </div>
+                    </div>
+
+                    <!-- Critic Feedback Callout -->
+                    <div class="feedback-banner" id="resFeedbackBox">
+                        <i class="fa-solid fa-comment-dots"></i>
+                        <div class="feedback-text">
+                            <strong>Optimization Review:</strong>
+                            <p id="resFeedbackText">Itinerary fits within target budget parameters.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <div class="results-tabs">
+                    <button class="tab-btn active" data-tab="tabSchedule"><i class="fa-solid fa-calendar-days"></i> Daily Schedule</button>
+                    <button class="tab-btn" data-tab="tabResearch"><i class="fa-solid fa-database"></i> Research Discovery</button>
+                    <button class="tab-btn" data-tab="tabBudget"><i class="fa-solid fa-chart-pie"></i> Budget Breakdown</button>
+                </div>
+
+                <!-- Tab 1: Day-by-Day Schedule -->
+                <div class="tab-pane active" id="tabSchedule">
+                    <div class="schedule-timeline" id="scheduleContainer">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Research Discovery Details -->
+                <div class="tab-pane" id="tabResearch">
+                    <div class="research-grid">
+                        <!-- Flights Card -->
+                        <div class="research-card glass-panel">
+                            <h4><i class="fa-solid fa-plane"></i> Flight Options</h4>
+                            <div class="research-items" id="flightsList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Hotels Card -->
+                        <div class="research-card glass-panel">
+                            <h4><i class="fa-solid fa-hotel"></i> Lodging Options</h4>
+                            <div class="research-items" id="hotelsList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Activities Card -->
+                        <div class="research-card glass-panel">
+                            <h4><i class="fa-solid fa-map-pin"></i> Curated Activities</h4>
+                            <div class="research-items" id="activitiesList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Budget Breakdown -->
+                <div class="tab-pane" id="tabBudget">
+                    <div class="budget-card glass-panel">
+                        <h4><i class="fa-solid fa-wallet"></i> Estimated Expense Distribution</h4>
+                        <div class="budget-breakdown-table" id="budgetTable">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Travel Itinerary Builder &copy; 2026 | Built with Google ADK (SequentialAgent, ParallelAgent, LoopAgent) &amp; Gemini</p>
+        </footer>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
