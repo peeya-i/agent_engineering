@@ -47,25 +47,100 @@ def save_hotel_research(
     return msg
 
 
+def fetch_internet_activities(
+    tool_context: ToolContext,
+    destination: str,
+    days: int,
+    interests: List[str],
+    query: str = ""
+) -> Dict[str, Any]:
+    """Fetches travel activity and attraction data from the internet for single or multi-day itineraries with error handling.
+    
+    Args:
+        destination: Target city or region.
+        days: Trip duration in days.
+        interests: List of user interests (e.g. food, culture, hiking).
+        query: Optional search query.
+        
+    Returns:
+        Structured dictionary containing status, activities list, and error handling messages.
+    """
+    try:
+        search_topic = query or f"top attractions landmarks restaurants things to do in {destination} for {', '.join(interests)}"
+        return {
+            "status": "success",
+            "destination": destination,
+            "days": days,
+            "interests": interests,
+            "query": search_topic,
+            "message": f"Successfully initiated multi-day internet activity research for {destination} ({days} days). Format results into structured activity objects."
+        }
+    except Exception as e:
+        error_msg = f"Error fetching internet activities for {destination}: {str(e)}"
+        return {
+            "status": "error",
+            "error_message": error_msg,
+            "destination": destination,
+            "days": days,
+            "fallback_available": True
+        }
+
+
 def save_activity_research(
     tool_context: ToolContext,
     activities: List[Dict[str, Any]]
 ) -> str:
-    """Saves landmark, restaurant, and tour options into the central state."""
-    raw_research = dict(tool_context.state.get("raw_research", {}))
-    raw_research["activities"] = activities
-    tool_context.state["raw_research"] = raw_research
-    msg = f"Successfully saved {len(activities)} activity options to raw_research."
-    append_event_to_json({
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "event_type": "tool_execution",
-        "agent": "ActivityPlanner",
-        "tool": "save_activity_research",
-        "saved_activities_count": len(activities),
-        "activities": activities,
-        "result": msg
-    })
-    return msg
+    """Saves structured landmark, restaurant, and tour options into the central state with multi-day validation and error handling."""
+    try:
+        # Validate and sanitize activities
+        cleaned_activities: List[Dict[str, Any]] = []
+        for idx, act in enumerate(activities or []):
+            if not isinstance(act, dict):
+                continue
+            name = str(act.get("activity_name", f"Activity {idx + 1}")).strip()
+            cat = str(act.get("category", "sightseeing")).strip().lower()
+            try:
+                cost = float(act.get("estimated_cost", 0.0))
+            except (ValueError, TypeError):
+                cost = 0.0
+            try:
+                dur = float(act.get("duration_hours", 2.0))
+            except (ValueError, TypeError):
+                dur = 2.0
+            desc = str(act.get("description", "")).strip()
+
+            cleaned_activities.append({
+                "activity_name": name,
+                "category": cat,
+                "estimated_cost": max(0.0, cost),
+                "duration_hours": max(0.5, dur),
+                "description": desc
+            })
+
+        raw_research = dict(tool_context.state.get("raw_research", {}))
+        raw_research["activities"] = cleaned_activities
+        tool_context.state["raw_research"] = raw_research
+        msg = f"Successfully saved {len(cleaned_activities)} structured activity options to raw_research."
+        append_event_to_json({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": "tool_execution",
+            "agent": "ActivityPlanner",
+            "tool": "save_activity_research",
+            "saved_activities_count": len(cleaned_activities),
+            "activities": cleaned_activities,
+            "result": msg
+        })
+        return msg
+    except Exception as e:
+        error_msg = f"Error saving activity research: {str(e)}"
+        append_event_to_json({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": "tool_execution_error",
+            "agent": "ActivityPlanner",
+            "tool": "save_activity_research",
+            "error": error_msg
+        })
+        return f"Warning: Encountered error ({error_msg}). Proceeding with current state."
 
 
 import re

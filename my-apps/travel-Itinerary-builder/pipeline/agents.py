@@ -1,20 +1,38 @@
-"""Agent definitions for Discovery Team and Optimization Room."""
-
+import logging
 import os
+from pathlib import Path
 from typing import Optional
 from google.adk.agents import Agent, ParallelAgent, LoopAgent, SequentialAgent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from google.adk.tools import google_search
 from .tools import (
     save_flight_research,
     save_hotel_research,
     save_activity_research,
+    fetch_internet_activities,
     save_itinerary_schedule,
     evaluate_budget_and_finalize,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_gemini_model() -> str:
     """Retrieves the Gemini model from environment or defaults to gemini-2.0-flash."""
     return os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+
+def get_activity_skill_toolset() -> Optional[SkillToolset]:
+    """Loads the activity planner skill toolset from the skills directory."""
+    skill_dir = Path(__file__).resolve().parent.parent / "skills" / "activity-planner-skill"
+    if skill_dir.exists() and (skill_dir / "SKILL.md").exists():
+        try:
+            skill = load_skill_from_dir(skill_dir)
+            return SkillToolset(skills=[skill])
+        except Exception as e:
+            logger.warning("Could not load activity planner skill from %s: %s", skill_dir, e)
+    return None
 
 
 def create_flight_researcher(model: Optional[str] = None) -> Agent:
@@ -71,32 +89,40 @@ Always execute the tool call."""
 
 
 def create_activity_planner(model: Optional[str] = None) -> Agent:
-    """Agent responsible for compiling landmarks, restaurants, and tours."""
+    """Agent responsible for compiling landmarks, restaurants, and tours using Gemini skills."""
     model_name = model or get_gemini_model()
-    instruction = """You are the ActivityPlanner agent.
-Your responsibility is to compile activities, landmarks, dining spots, and cultural experiences tailored to the user's destination, days, and interests.
-Check `user_input` in session state.
+    skill_toolset = get_activity_skill_toolset()
+    tools = [save_activity_research, fetch_internet_activities, google_search]
+    if skill_toolset:
+        tools.append(skill_toolset)
 
-Provide a curated list of at least 6-10 diverse activities spanning:
-- Key landmarks and cultural highlights matching user interests
-- Popular local food spots and restaurants (cheap eats and nice dining)
-- Free or low-cost activities (parks, public markets, historic walks)
-- Guided tours or excursions
+    instruction = """You are the ActivityPlanner agent utilizing the Gemini `activity-planner-skill`.
+Your responsibility is to fetch real-time data from the internet and compile structured activity, landmark, dining, and tour recommendations matching the user's destination, days, and interests.
+Check `user_input` in session state for destination, duration (days), and interests.
 
-For each activity include:
-- activity_name
-- category ("landmark", "restaurant", "tour", "culture", "nature")
-- estimated_cost (float in USD, use 0.0 for free activities)
-- duration_hours (float, e.g. 2.0)
-- description (why it matches the user's interests)
-
-Call `save_activity_research(activities=[...])` with your recommendations to update state.
+Skills & Guidelines:
+1. Research and fetch data from the internet for the requested destination, duration (multi-day support), and user interests.
+2. Provide a rich, curated list of at least 6-12 diverse activities scaled to the trip duration:
+   - Key cultural landmarks and signature highlights matching user interests
+   - Popular local food spots and restaurants (cheap eats and quality dining)
+   - Free or low-cost activities (parks, public markets, historic walks)
+   - Guided tours, excursions, or nature walks
+3. Structure each activity with:
+   - activity_name (string)
+   - category ("landmark", "restaurant", "tour", "culture", "nature", "shopping")
+   - estimated_cost (float in USD, 0.0 for free activities)
+   - duration_hours (float, e.g. 2.0)
+   - description (highlighting why it matches user interests and location context)
+4. Robust Error Handling:
+   - If internet search queries encounter errors, network timeouts, or missing details, handle them gracefully by returning verified regional highlights and appropriate error recovery details without breaking.
+   - Ensure all output fields have valid default values.
+5. Call `save_activity_research(activities=[...])` with your structured recommendations to update state.
 Always execute the tool call."""
     return Agent(
         name="ActivityPlanner",
         model=model_name,
         instruction=instruction,
-        tools=[save_activity_research]
+        tools=tools
     )
 
 

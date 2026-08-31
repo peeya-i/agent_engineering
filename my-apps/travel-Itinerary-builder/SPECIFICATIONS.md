@@ -3,7 +3,9 @@
 ## Overview
 Build Travel Itinerary Builder as an autonomous, multi-agent AI pipeline designed to generate structured, multi-day vacation plans. The system takes user preferences (destination, budget, duration, interests) and produces a complete itinerary while cross-referencing scheduling conflicts and enforcing strict budgetary boundaries. Build the app to use Gemini API. It should get the API Key from the environment variable GEMINI_API_KEY and model name from the environment variable GEMINI_MODEL.
 
-Use flask to build the frontend for this application. The app will ask for the destination, budget, duration, and interests. If the information is missing, it will prompt the user to provide it. If the data is valid, the app will call the backend API to generate the itinerary and display it in a user-friendly format.
+Use skills feature of Gemini for activity planner. The skills should instruct Gemini to fetch data from the internet and return it in a structured format. The skill should also be able to handle errors and return appropriate error messages. The skill should be able to fetch data for multiple days and should be able to handle errors and return appropriate error messages. The skill should be able to handle requests for multiple days and should be able to handle errors and return appropriate error messages.
+
+Use flask to build the frontend for this application. The app will ask for the destination, budget, departure date, duration, and interests. If the information is missing, it will prompt the user to provide it. If the data is valid, the app will call the backend API to generate the itinerary and display it in a user-friendly format.
 
 ## Architecture
 The application follows a hybrid orchestration pattern, utilizing a **Sequential Pipeline** that coordinates a **Parallel Discovery Phase** followed by an iterative **Loop Refinement Phase**.

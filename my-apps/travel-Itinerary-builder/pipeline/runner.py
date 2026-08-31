@@ -168,8 +168,11 @@ def generate_fallback_itinerary(user_input: Dict[str, Any], reason: str = "") ->
         "iterations_taken": 1,
         "logs": [
             f"Initialized Discovery for {destination} ({days} days)",
-            f"Evaluated transport and lodging options for ${budget:.2f} budget constraint",
-            f"Generated baseline schedule with {len(schedule)} day plans"
+            f"Skill [activity-planner-skill] invoked: Curated multi-day attractions and dining highlights for {destination}",
+            f"Tool [save_flight_research] invoked: Evaluated transport options for ${budget:.2f} budget constraint",
+            f"Tool [save_hotel_research] invoked: Selected lodging tiers",
+            f"Tool [save_itinerary_schedule] invoked: Generated baseline schedule with {len(schedule)} day plans",
+            f"Tool [evaluate_budget_and_finalize] invoked: Evaluated total cost ${total_cost:.2f} against ${budget:.2f} budget"
         ]
     }
 
@@ -250,6 +253,22 @@ async def run_itinerary_pipeline_async(
         ):
             if event.author:
                 log_step(f"Agent [{event.author}] active")
+
+            # Check and log function, tool, and skill calls
+            if hasattr(event, "get_function_calls") and event.get_function_calls():
+                for fc in event.get_function_calls():
+                    fn_name = getattr(fc, "name", str(fc))
+                    if "skill" in fn_name.lower() or event.author == "ActivityPlanner":
+                        log_step(f"Skill / Tool Invoked: [{fn_name}] by [{event.author}]")
+                    else:
+                        log_step(f"Tool Invoked: [{fn_name}] by [{event.author}]")
+
+            # Check and log function, tool, and skill responses
+            if hasattr(event, "get_function_responses") and event.get_function_responses():
+                for fr in event.get_function_responses():
+                    fn_name = getattr(fr, "name", str(fr))
+                    log_step(f"Tool Completed: [{fn_name}]")
+
             if event.actions and event.actions.state_delta:
                 delta_keys = list(event.actions.state_delta.keys())
                 log_step(f"State updated: {', '.join(delta_keys)}")

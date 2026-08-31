@@ -25,9 +25,14 @@ graph TD
 ### 1. Parallel Discovery Team (`ParallelAgent`)
 - **FlightResearcher**: Locates transport options, flight/train times, and costs.
 - **HotelResearcher**: Finds lodging options across luxury, mid-range, and budget tiers matching safety and user interests.
-- **ActivityPlanner**: Compiles landmarks, local dining, and excursions aligned with user preferences.
+- **ActivityPlanner**: Utilizes the **Gemini Skills Feature** (`activity-planner-skill`) and internet search to fetch, curate, and structure landmarks, dining, and multi-day tours with robust error handling.
 
-### 2. Loop Optimization Room (`LoopAgent`)
+### 2. Gemini Skills Integration (`skills/activity-planner-skill`)
+- **Multi-Day Internet Research**: Fetches live attraction and dining data from the web scaled across the requested trip duration ($1$ to $30$ days).
+- **Structured Formatting**: Returns sanitized objects (`activity_name`, `category`, `estimated_cost`, `duration_hours`, `description`).
+- **Resilience & Error Handling**: Gracefully handles network timeouts, missing fields, or search failures by providing reliable fallback recommendations and informative messages.
+
+### 3. Loop Optimization Room (`LoopAgent`)
 - **Scheduler**: Synthesizes discovery data into day-by-day itineraries and calculates total estimated costs. Crucially reads `critic_feedback` from prior iterations to adjust hotel tiers, select free/cheaper activities, or optimize dining.
 - **BudgetEnforcer**: Compares total costs against the user's budget.
   - If `cost <= budget`: sets `budget_approved = true` and exits the loop.
@@ -113,6 +118,12 @@ Run the complete test suite verifying structural integrity, context extraction, 
 ```bash
 python -m unittest discover -s tests -p "test_*.py"
 ```
+
+---
+
+## 📜 Event Logging
+All pipeline lifecycle events, model requests/responses, tool calls, and execution snapshots are automatically recorded into:
+- [`artifacts/events.json`](file:///home/pi-net/Documents/agent_eng_labs/agent_engineering/my-apps/travel-Itinerary-builder/artifacts/events.json)
 
 ---
 

@@ -50,39 +50,44 @@ def append_event_to_json(
     event_entry: Dict[str, Any],
     file_path: Optional[Path] = None
 ) -> None:
-    """Appends a structured event entry to the events.json file."""
+    """Appends a structured event entry to the events.json file in single-line JSON format."""
     target_path = file_path or DEFAULT_EVENTS_FILE
     target_path = Path(target_path).resolve()
 
-    events_list: List[Dict[str, Any]] = []
-
-    # Read existing events if the file exists and is valid JSON
-    if target_path.exists():
-        try:
-            with open(target_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if content:
-                    existing = json.loads(content)
-                    if isinstance(existing, list):
-                        events_list = existing
-                    elif isinstance(existing, dict):
-                        events_list = [existing]
-        except Exception as e:
-            logger.warning("Could not read existing %s (%s). Recreating.", target_path, e)
-            events_list = []
-
     clean_entry = serialize_for_json(event_entry)
-    events_list.append(clean_entry)
+    line = json.dumps(clean_entry, ensure_ascii=False)
 
-    # Atomically/safely write back to file
     try:
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = target_path.with_suffix(".tmp")
-        with open(temp_path, "w", encoding="utf-8") as f:
-            json.dump(events_list, f, indent=2, ensure_ascii=False)
-        temp_path.replace(target_path)
+        with open(target_path, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
     except Exception as e:
         logger.error("Failed to write event to %s: %s", target_path, e)
+
+
+def read_events_from_json(file_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """Reads events from events.json, supporting single-line JSON (JSON Lines) format."""
+    target_path = file_path or DEFAULT_EVENTS_FILE
+    target_path = Path(target_path).resolve()
+    if not target_path.exists():
+        return []
+
+    events_list: List[Dict[str, Any]] = []
+    try:
+        with open(target_path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            if content.startswith("[") and content.endswith("]"):
+                data = json.loads(content)
+                return data if isinstance(data, list) else [data]
+            for line in content.splitlines():
+                line = line.strip()
+                if line:
+                    events_list.append(json.loads(line))
+    except Exception as e:
+        logger.warning("Could not read events from %s: %s", target_path, e)
+    return events_list
 
 
 class JsonEventLoggerPlugin(BasePlugin):
@@ -154,15 +159,18 @@ class JsonEventLoggerPlugin(BasePlugin):
         tool_args: Dict[str, Any],
         tool_context: ToolContext
     ) -> Optional[Dict[str, Any]]:
-        """Records tool invocations before execution."""
+        """Records tool and skill invocations before execution."""
         agent_name = getattr(tool_context, "agent_name", "unknown_agent")
-        tool_name = getattr(tool, "name", str(tool))
+        tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
+        is_skill = "skill" in tool_name.lower() or agent_name == "ActivityPlanner" or hasattr(tool, "skills")
+        event_type = "skill_invocation" if (is_skill and ("skill" in tool_name.lower() or hasattr(tool, "skills"))) else "tool_invocation"
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event_type": "tool_call",
+            "event_type": event_type,
             "agent": agent_name,
             "tool_name": tool_name,
+            "is_skill_tool": is_skill,
             "tool_arguments": serialize_for_json(tool_args),
         }
         append_event_to_json(entry, self.output_file)
@@ -176,9 +184,11 @@ class JsonEventLoggerPlugin(BasePlugin):
         tool_context: ToolContext,
         result: Any
     ) -> Optional[Dict[str, Any]]:
-        """Records tool outputs and responses after execution."""
+        """Records tool and skill outputs and responses after execution."""
         agent_name = getattr(tool_context, "agent_name", "unknown_agent")
-        tool_name = getattr(tool, "name", str(tool))
+        tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
+        is_skill = "skill" in tool_name.lower() or agent_name == "ActivityPlanner" or hasattr(tool, "skills")
+        event_type = "skill_response" if (is_skill and ("skill" in tool_name.lower() or hasattr(tool, "skills"))) else "tool_response"
 
         state_dict = {}
         if hasattr(tool_context, "state"):
@@ -192,9 +202,10 @@ class JsonEventLoggerPlugin(BasePlugin):
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event_type": "tool_response",
+            "event_type": event_type,
             "agent": agent_name,
             "tool_name": tool_name,
+            "is_skill_tool": is_skill,
             "tool_arguments": serialize_for_json(tool_args),
             "tool_result": serialize_for_json(result),
             "state_snapshot": serialize_for_json(state_dict)
