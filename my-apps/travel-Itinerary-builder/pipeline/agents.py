@@ -39,15 +39,15 @@ def create_flight_researcher(model: Optional[str] = None) -> Agent:
     """Agent responsible for researching transportation options and costs."""
     model_name = model or get_gemini_model()
     instruction = """You are the FlightResearcher agent.
-Your responsibility is to research and locate flight and transit options for the user's destination.
-Look at the user's destination, duration, and budget in the session state `user_input`.
+Your responsibility is to research and locate flight and transit options for the user's trip.
+Look at the user's `city_of_origin` (origin city), `destination`, `departure_date`, `days` (duration), and `budget` in the session state `user_input`.
 
 Provide 3 distinct flight/transit options (e.g. Economy Direct, Budget Airline, Premium/Flexible) with:
 - flight_name (e.g., "Economy Non-Stop")
 - airline (e.g., "United Airlines" or "Delta")
 - travel_time (e.g., "6h 30m")
 - estimated_cost (realistic roundtrip total in USD as a float)
-- notes (baggage allowance, transfer details)
+- notes (origin, departure date, baggage allowance, transfer details)
 
 Call `save_flight_research(flights=[...])` with your options to update the state.
 Always execute the tool call."""
@@ -216,11 +216,10 @@ Always execute the tool call."""
 
 
 def create_discovery_team(model: Optional[str] = None) -> ParallelAgent:
-    """Creates the Parallel Discovery Team subagents."""
+    """Creates the Parallel Discovery Team subagents (HotelResearcher, ActivityPlanner)."""
     return ParallelAgent(
         name="DiscoveryTeam",
         sub_agents=[
-            create_flight_researcher(model),
             create_hotel_researcher(model),
             create_activity_planner(model),
         ]
@@ -240,17 +239,19 @@ def create_optimization_room(model: Optional[str] = None, max_iterations: int = 
 
 
 def create_travel_pipeline(model: Optional[str] = None, max_iterations: int = 5) -> SequentialAgent:
-    """Creates the complete Sequential Pipeline orchestrating Parallel Discovery and Loop Optimization.
+    """Creates the complete Sequential Pipeline orchestrating Flight Research, Parallel Discovery, and Loop Optimization.
 
     Explicitly implements the architecture from SPECIFICATIONS.md:
     Sequential Pipeline:
-      -> ParallelAgent (Discovery Team: FlightResearcher, HotelResearcher, ActivityPlanner)
-      -> LoopAgent (Optimization Room: Scheduler, BudgetEnforcer, max_iterations=5)
+      1. FlightResearcher (Get flight information)
+      2. ParallelAgent (Discovery Team: HotelResearcher, ActivityPlanner)
+      3. LoopAgent (Optimization Room: Scheduler, BudgetEnforcer, max_iterations=5)
     """
+    flights = create_flight_researcher(model)
     discovery = create_discovery_team(model)
     optimization = create_optimization_room(model, max_iterations=max_iterations)
-    
+
     return SequentialAgent(
         name="TravelItineraryPipeline",
-        sub_agents=[discovery, optimization]
+        sub_agents=[flights, discovery, optimization]
     )

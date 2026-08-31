@@ -14,7 +14,7 @@ from google.adk.sessions import InMemorySessionService
 from .state import create_initial_state, validate_state
 from .agents import create_travel_pipeline
 from .tools import normalize_schedule
-from .event_logger import JsonEventLoggerPlugin, append_event_to_json
+from .event_logger import JsonEventLoggerPlugin, append_event_to_json, append_usage_to_csv
 
 # Load .env file
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,10 +22,55 @@ load_dotenv(BASE_DIR / ".env", override=True)
 
 logger = logging.getLogger(__name__)
 
+# Suppress AFC (Automatic Function Calling) compatibility warnings from google-genai
+# since Google ADK manages and dispatches function/tool executions directly.
+logging.getLogger("google_genai.models").setLevel(logging.ERROR)
+
+# Enable automatic retries with exponential backoff & jitter on Gemini 429 rate limits
+from google.adk.models.google_llm import Gemini
+from google.genai.errors import ClientError
+import random
+
+_original_generate_content_async = getattr(Gemini, "_original_generate_content_async", Gemini.generate_content_async)
+Gemini._original_generate_content_async = _original_generate_content_async
+
+async def _retry_generate_content_async(self, llm_request, stream: bool = False):
+    max_retries = 5
+    base_delay = 8.0
+    for attempt in range(1, max_retries + 1):
+        try:
+            async for resp in _original_generate_content_async(self, llm_request, stream=stream):
+                yield resp
+            return
+        except Exception as e:
+            err_str = str(e)
+            is_429 = (
+                "429" in err_str
+                or "RESOURCE_EXHAUSTED" in err_str
+                or (isinstance(e, ClientError) and getattr(e, "code", None) == 429)
+            )
+            if is_429 and attempt < max_retries:
+                delay = (base_delay * (2 ** (attempt - 1))) + random.uniform(0.5, 1.5)
+                model_name = getattr(llm_request, "model", "gemini")
+                logger.warning(
+                    "Gemini API 429 rate limit hit on model '%s'. Auto-retrying in %.1fs (Attempt %d/%d)...",
+                    model_name,
+                    delay,
+                    attempt,
+                    max_retries
+                )
+                await asyncio.sleep(delay)
+            else:
+                raise
+
+Gemini.generate_content_async = _retry_generate_content_async
+
 
 def generate_fallback_itinerary(user_input: Dict[str, Any], reason: str = "") -> Dict[str, Any]:
     """Generates an intelligent baseline itinerary for impossible budgets or fallback scenarios."""
     destination = user_input.get("destination", "Destination")
+    city_of_origin = user_input.get("city_of_origin", "")
+    departure_date = user_input.get("departure_date", "")
     budget = float(user_input.get("budget", 500))
     days = int(user_input.get("days", 3))
     interests = user_input.get("interests", ["sightseeing", "food"])
@@ -37,20 +82,23 @@ def generate_fallback_itinerary(user_input: Dict[str, Any], reason: str = "") ->
     hotel_est = hotel_rate_per_night * days
     daily_activity_budget = max(20.0, (budget * 0.20) / max(1, days))
 
+    origin_label = f" from {city_of_origin}" if city_of_origin else ""
+    date_note = f" (Departing {departure_date})" if departure_date else ""
+
     flights = [
         {
-            "flight_name": f"Economy Saver to {destination}",
+            "flight_name": f"Economy Saver{origin_label} to {destination}",
             "airline": "Standard Carrier",
             "travel_time": "Direct / 1-stop",
             "estimated_cost": round(flight_est, 2),
-            "notes": "Includes standard carry-on and standard seat selection"
+            "notes": f"Includes standard carry-on and seat selection{date_note}"
         },
         {
-            "flight_name": f"Flexible Fare to {destination}",
+            "flight_name": f"Flexible Fare{origin_label} to {destination}",
             "airline": "Major Airline",
             "travel_time": "Non-stop",
             "estimated_cost": round(flight_est * 1.35, 2),
-            "notes": "Checked bag included + refundable"
+            "notes": f"Checked bag included + refundable{date_note}"
         }
     ]
 
@@ -182,11 +230,20 @@ async def run_itinerary_pipeline_async(
     budget: float,
     days: int,
     interests: List[str],
+    city_of_origin: str = "",
+    departure_date: str = "",
     model: Optional[str] = None,
     progress_callback: Optional[Callable[[str], None]] = None
 ) -> Dict[str, Any]:
     """Asynchronously runs the sequential Travel Itinerary Pipeline."""
-    initial_state = create_initial_state(destination, budget, days, interests)
+    initial_state = create_initial_state(
+        destination=destination,
+        budget=budget,
+        days=days,
+        interests=interests,
+        city_of_origin=city_of_origin,
+        departure_date=departure_date
+    )
     logs: List[str] = []
 
     def log_step(msg: str):
@@ -197,7 +254,8 @@ async def run_itinerary_pipeline_async(
             except Exception:
                 pass
 
-    log_step(f"Starting Travel Itinerary Pipeline for {destination} ({days} days, budget ${budget:.2f})...")
+    origin_desc = f" from {city_of_origin}" if city_of_origin else ""
+    log_step(f"Starting Travel Itinerary Pipeline for {destination}{origin_desc} ({days} days, budget ${budget:.2f})...")
 
     # Check for GEMINI_API_KEY
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -224,11 +282,14 @@ async def run_itinerary_pipeline_async(
             state=initial_state
         )
 
+        origin_str = f"origin city: '{city_of_origin}', " if city_of_origin else ""
+        dep_str = f"departure date: '{departure_date}', " if departure_date else ""
         prompt_text = (
-            f"Generate a vacation itinerary for destination: '{destination}', "
-            f"duration: {days} days, budget: ${budget:.2f} USD, and interests: {interests}. "
-            f"Follow the sequential workflow: 1. Research flights, hotels, and activities in parallel. "
-            f"2. Synthesize schedule in loop, enforce budget constraints, and critique/refine if cost exceeds budget."
+            f"Generate a vacation itinerary for {origin_str}destination: '{destination}', "
+            f"{dep_str}duration: {days} days, budget: ${budget:.2f} USD, and interests: {interests}. "
+            f"Follow the sequential workflow: 1. Get flight information (FlightResearcher). "
+            f"2. Research lodging and activities in parallel (DiscoveryTeam: HotelResearcher, ActivityPlanner). "
+            f"3. Synthesize schedule in loop, enforce budget constraints, and critique/refine if cost exceeds budget."
         )
 
         user_message = types.Content(
@@ -242,8 +303,15 @@ async def run_itinerary_pipeline_async(
             "user_input": initial_state["user_input"],
             "prompt": prompt_text
         })
+        append_usage_to_csv({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": "pipeline_start",
+            "user_input": initial_state["user_input"],
+            "prompt": prompt_text,
+            "debug_log": f"Started pipeline run for destination={destination}"
+        })
 
-        log_step("Executing Discovery Team (FlightResearcher, HotelResearcher, ActivityPlanner in parallel)...")
+        log_step("Executing 1. FlightResearcher, then 2. Discovery Team (HotelResearcher, ActivityPlanner in parallel)...")
         iteration_count = 0
 
         async for event in runner.run_async(
@@ -302,22 +370,57 @@ async def run_itinerary_pipeline_async(
             "event_type": "pipeline_complete",
             "final_state": final_state
         })
+        append_usage_to_csv({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": "pipeline_complete",
+            "user_input": initial_state["user_input"],
+            "response": final_state.get("current_itinerary"),
+            "debug_log": f"Completed pipeline run. Approved={final_state.get('budget_approved')}"
+        })
 
         final_state["logs"] = logs
         return final_state
 
     except Exception as e:
-        logger.exception("Error during pipeline execution: %s", e)
-        log_step(f"Pipeline encountered runtime condition: {str(e)}. Gracefully generating structured itinerary.")
+        # Unpack ExceptionGroup or nested causes to check for 429 / quota limit
+        all_err_strings = [str(e), repr(e)]
+        if hasattr(e, "exceptions"):
+            for sub in e.exceptions:
+                all_err_strings.extend([str(sub), repr(sub)])
+                if hasattr(sub, "__cause__") and sub.__cause__:
+                    all_err_strings.extend([str(sub.__cause__), repr(sub.__cause__)])
+
+        combined_err = " ".join(all_err_strings)
+        is_quota_limit = (
+            "429" in combined_err
+            or "RESOURCE_EXHAUSTED" in combined_err
+            or "_resourceexhaustederror" in combined_err.lower()
+            or "quota" in combined_err.lower()
+        )
+
+        if is_quota_limit:
+            logger.warning("Gemini API rate limit / quota exhausted (429). Gracefully engaging intelligent fallback synthesizer.")
+            log_step("Gemini API rate limit (429 quota exhausted) reached. Gracefully activating intelligent fallback synthesizer.")
+        else:
+            logger.warning("Pipeline encountered runtime condition (%s). Engaging fallback recovery.", type(e).__name__)
+            log_step(f"Pipeline encountered runtime condition: {type(e).__name__}. Gracefully generating structured itinerary.")
+
         fallback = generate_fallback_itinerary(
             initial_state["user_input"],
-            reason=f"Graceful Recovery: {type(e).__name__}"
+            reason="Gemini API Quota Exhausted (429)" if is_quota_limit else f"Graceful Recovery: {type(e).__name__}"
         )
         append_event_to_json({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": "pipeline_fallback",
             "error": str(e),
             "fallback_state": fallback
+        })
+        append_usage_to_csv({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_type": "pipeline_fallback",
+            "user_input": initial_state["user_input"],
+            "response": fallback.get("current_itinerary"),
+            "debug_log": f"Fallback recovery engaged: {str(e)[:100]}"
         })
         fallback["logs"] = logs + fallback.get("logs", [])
         return fallback
@@ -328,6 +431,8 @@ def run_itinerary_pipeline(
     budget: float,
     days: int,
     interests: List[str],
+    city_of_origin: str = "",
+    departure_date: str = "",
     model: Optional[str] = None
 ) -> Dict[str, Any]:
     """Synchronous entry point for Flask routes."""
@@ -337,6 +442,8 @@ def run_itinerary_pipeline(
             budget=budget,
             days=days,
             interests=interests,
+            city_of_origin=city_of_origin,
+            departure_date=departure_date,
             model=model
         )
     )

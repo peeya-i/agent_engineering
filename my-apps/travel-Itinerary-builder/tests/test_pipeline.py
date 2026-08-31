@@ -24,22 +24,62 @@ class TestTravelItineraryBuilder(unittest.TestCase):
         """Milestone 1: Must explicitly declare ParallelAgent and LoopAgent frameworks."""
         pipeline = create_travel_pipeline()
         self.assertIsInstance(pipeline, SequentialAgent, "Pipeline root must be a SequentialAgent")
-        self.assertEqual(len(pipeline.sub_agents), 2, "Pipeline must contain Discovery and Optimization phases")
+        self.assertEqual(len(pipeline.sub_agents), 3, "Pipeline must contain FlightResearcher, DiscoveryTeam, and OptimizationRoom")
 
-        discovery_team = pipeline.sub_agents[0]
-        self.assertIsInstance(discovery_team, ParallelAgent, "Phase 1 must be a ParallelAgent")
-        self.assertEqual(len(discovery_team.sub_agents), 3, "Discovery must contain 3 parallel sub-agents")
+        flight_researcher = pipeline.sub_agents[0]
+        self.assertEqual(flight_researcher.name, "FlightResearcher")
+
+        discovery_team = pipeline.sub_agents[1]
+        self.assertIsInstance(discovery_team, ParallelAgent, "Phase 2 must be a ParallelAgent")
+        self.assertEqual(len(discovery_team.sub_agents), 2, "Discovery must contain 2 parallel sub-agents (HotelResearcher, ActivityPlanner)")
         sub_agent_names = [a.name for a in discovery_team.sub_agents]
-        self.assertIn("FlightResearcher", sub_agent_names)
         self.assertIn("HotelResearcher", sub_agent_names)
         self.assertIn("ActivityPlanner", sub_agent_names)
 
-        optimization_room = pipeline.sub_agents[1]
-        self.assertIsInstance(optimization_room, LoopAgent, "Phase 2 must be a LoopAgent")
+        optimization_room = pipeline.sub_agents[2]
+        self.assertIsInstance(optimization_room, LoopAgent, "Phase 3 must be a LoopAgent")
         self.assertEqual(optimization_room.max_iterations, 5, "LoopAgent must cap at 5 iterations")
         loop_sub_agent_names = [a.name for a in optimization_room.sub_agents]
         self.assertIn("Scheduler", loop_sub_agent_names)
         self.assertIn("BudgetEnforcer", loop_sub_agent_names)
+
+    def test_usages_csv_logging(self):
+        """Test that usages.csv is created and written with required 10 columns."""
+        import os
+        import csv
+        from pathlib import Path
+        from pipeline.event_logger import append_usage_to_csv, CSV_COLUMNS, DEFAULT_USAGES_CSV
+
+        test_csv = Path("artifacts/test_usages.csv")
+        if test_csv.exists():
+            test_csv.unlink()
+
+        record = {
+            "timestamp": "2026-08-31T12:00:00Z",
+            "event_type": "test_request",
+            "user_input": {"destination": "Tokyo", "budget": 2000, "city_of_origin": "SF"},
+            "prompt": "Test prompt",
+            "agent": "TestAgent",
+            "model": "gemini-3.5-flash-lite",
+            "request_contents": "test content",
+            "config": "{}",
+            "response": "test response",
+            "debug_log": "test debug log"
+        }
+
+        append_usage_to_csv(record, file_path=test_csv)
+        self.assertTrue(test_csv.exists())
+
+        with open(test_csv, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            self.assertEqual(reader.fieldnames, CSV_COLUMNS)
+            rows = list(reader)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["agent"], "TestAgent")
+            self.assertEqual(rows[0]["model"], "gemini-3.5-flash-lite")
+
+        if test_csv.exists():
+            test_csv.unlink()
 
     def test_milestone_2_state_schema_and_context_extraction(self):
         """Milestone 2: Centralized Global State Schema & critic feedback."""

@@ -1,5 +1,4 @@
-"""JSON Event Logger for recording all model messages, responses, and tool calls."""
-
+import csv
 from datetime import datetime, timezone
 import json
 import logging
@@ -14,8 +13,57 @@ from google.adk.tools import BaseTool, ToolContext
 
 logger = logging.getLogger(__name__)
 
-# Artifacts events.json path
-DEFAULT_EVENTS_FILE = Path(__file__).resolve().parent.parent / "artifacts" / "events.json"
+# Artifacts paths
+ARTIFACTS_DIR = Path(__file__).resolve().parent.parent / "artifacts"
+DEFAULT_EVENTS_FILE = ARTIFACTS_DIR / "events.json"
+DEFAULT_USAGES_CSV = ARTIFACTS_DIR / "usages.csv"
+
+CSV_COLUMNS = [
+    "timestamp",
+    "event_type",
+    "user_input",
+    "prompt",
+    "agent",
+    "model",
+    "request_contents",
+    "config",
+    "response",
+    "debug_log"
+]
+
+
+def append_usage_to_csv(
+    data: Dict[str, Any],
+    file_path: Optional[Path] = None
+) -> None:
+    """Appends a usage record to artifacts/usages.csv with required columns."""
+    target_path = file_path or DEFAULT_USAGES_CSV
+    target_path = Path(target_path).resolve()
+
+    try:
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        file_exists = target_path.exists() and target_path.stat().st_size > 0
+
+        row = {
+            "timestamp": str(data.get("timestamp") or datetime.now(timezone.utc).isoformat()),
+            "event_type": str(data.get("event_type", "")),
+            "user_input": json.dumps(data.get("user_input", "")) if isinstance(data.get("user_input"), (dict, list)) else str(data.get("user_input", "")),
+            "prompt": str(data.get("prompt", "")),
+            "agent": str(data.get("agent", "")),
+            "model": str(data.get("model", "")),
+            "request_contents": json.dumps(data.get("request_contents", "")) if isinstance(data.get("request_contents"), (dict, list)) else str(data.get("request_contents", "")),
+            "config": json.dumps(data.get("config", "")) if isinstance(data.get("config"), (dict, list)) else str(data.get("config", "")),
+            "response": json.dumps(data.get("response", "")) if isinstance(data.get("response"), (dict, list)) else str(data.get("response", "")),
+            "debug_log": str(data.get("debug_log", ""))
+        }
+
+        with open(target_path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(row)
+    except Exception as e:
+        logger.error("Failed to write usage row to %s: %s", target_path, e)
 
 
 def serialize_for_json(obj: Any) -> Any:
@@ -100,6 +148,7 @@ class JsonEventLoggerPlugin(BasePlugin):
     ):
         super().__init__(name=name)
         self.output_file = output_file or DEFAULT_EVENTS_FILE
+        self.csv_file = ARTIFACTS_DIR / "usages.csv"
 
     async def before_model_callback(
         self,
@@ -124,6 +173,15 @@ class JsonEventLoggerPlugin(BasePlugin):
             "config": serialize_for_json(config),
         }
         append_event_to_json(entry, self.output_file)
+        append_usage_to_csv({
+            "timestamp": entry["timestamp"],
+            "event_type": "model_request",
+            "agent": agent_name,
+            "model": model_name,
+            "request_contents": entry["request_contents"],
+            "config": entry["config"],
+            "debug_log": f"Model request from agent {agent_name}"
+        }, self.csv_file)
         return None
 
     async def after_model_callback(
@@ -150,6 +208,14 @@ class JsonEventLoggerPlugin(BasePlugin):
             "usage_metadata": serialize_for_json(usage_metadata),
         }
         append_event_to_json(entry, self.output_file)
+        append_usage_to_csv({
+            "timestamp": entry["timestamp"],
+            "event_type": "model_response",
+            "agent": agent_name,
+            "model": model_version,
+            "response": entry["response_content"],
+            "debug_log": f"Model response received for agent {agent_name} (finish_reason={finish_reason})"
+        }, self.csv_file)
         return None
 
     async def before_tool_callback(
@@ -174,6 +240,13 @@ class JsonEventLoggerPlugin(BasePlugin):
             "tool_arguments": serialize_for_json(tool_args),
         }
         append_event_to_json(entry, self.output_file)
+        append_usage_to_csv({
+            "timestamp": entry["timestamp"],
+            "event_type": event_type,
+            "agent": agent_name,
+            "request_contents": entry["tool_arguments"],
+            "debug_log": f"Tool {tool_name} invoked by {agent_name}"
+        }, self.csv_file)
         return None
 
     async def after_tool_callback(
@@ -211,4 +284,11 @@ class JsonEventLoggerPlugin(BasePlugin):
             "state_snapshot": serialize_for_json(state_dict)
         }
         append_event_to_json(entry, self.output_file)
+        append_usage_to_csv({
+            "timestamp": entry["timestamp"],
+            "event_type": event_type,
+            "agent": agent_name,
+            "response": entry["tool_result"],
+            "debug_log": f"Tool {tool_name} completed for agent {agent_name}"
+        }, self.csv_file)
         return None

@@ -6,10 +6,12 @@ from pydantic import BaseModel, Field
 
 class UserInput(BaseModel):
     """User preferences schema."""
+    city_of_origin: str = ""
     destination: str
     budget: float
     days: int
     interests: List[str] = Field(default_factory=list)
+    departure_date: str = ""
 
 
 class FlightResearchItem(BaseModel):
@@ -80,15 +82,19 @@ def create_initial_state(
     destination: str,
     budget: float,
     days: int,
-    interests: List[str]
+    interests: List[str],
+    city_of_origin: str = "",
+    departure_date: str = ""
 ) -> Dict[str, Any]:
     """Creates the initial centralized dictionary state."""
     return {
         "user_input": {
+            "city_of_origin": str(city_of_origin or "").strip(),
             "destination": str(destination).strip(),
             "budget": float(budget),
             "days": int(days),
-            "interests": [str(i).strip() for i in interests if str(i).strip()]
+            "interests": [str(i).strip() for i in interests if str(i).strip()],
+            "departure_date": str(departure_date or "").strip()
         },
         "raw_research": {
             "flights": [],

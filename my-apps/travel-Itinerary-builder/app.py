@@ -15,6 +15,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("travel_app")
 
+# Suppress AFC (Automatic Function Calling) compatibility warnings from google-genai
+# since Google ADK manages and dispatches function/tool executions directly.
+logging.getLogger("google_genai.models").setLevel(logging.ERROR)
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "travel-itinerary-builder-secret-2026")
 
@@ -38,12 +42,14 @@ async def generate_itinerary():
         data = {}
 
     destination = str(data.get("destination", "")).strip()
+    city_of_origin = str(data.get("city_of_origin") or data.get("origin") or "").strip()
+    departure_date = str(data.get("departure_date") or "").strip()
     raw_budget = data.get("budget", None)
-    raw_days = data.get("days", None)
+    raw_days = data.get("days") or data.get("duration", None)
     raw_interests = data.get("interests", [])
 
     # Validate inputs as required by SPECIFICATIONS.md:
-    # "The app will ask for the destination, budget, duration, and interests. If the information is missing, it will prompt the user to provide it."
+    # "The app will ask for the destination, budget, departure date, duration, and interests. If the information is missing, it will prompt the user to provide it."
     missing_fields = []
     if not destination:
         missing_fields.append("Destination")
@@ -97,8 +103,8 @@ async def generate_itinerary():
         interests = ["Sightseeing", "Local Food", "Culture"]
 
     logger.info(
-        "Received itinerary request: Destination='%s', Budget=$%.2f, Days=%d, Interests=%s",
-        destination, budget, days, interests
+        "Received itinerary request: Origin='%s', Destination='%s', Date='%s', Budget=$%.2f, Days=%d, Interests=%s",
+        city_of_origin, destination, departure_date, budget, days, interests
     )
 
     # Execute the multi-agent pipeline
@@ -108,6 +114,8 @@ async def generate_itinerary():
             budget=budget,
             days=days,
             interests=interests,
+            city_of_origin=city_of_origin,
+            departure_date=departure_date,
             model=GEMINI_MODEL
         )
 

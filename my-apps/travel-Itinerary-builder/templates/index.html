@@ -60,27 +60,61 @@
                     </div>
 
                     <form id="itineraryForm" novalidate>
-                        <!-- Destination Field -->
-                        <div class="form-group">
-                            <label for="destinationInput">
-                                <i class="fa-solid fa-location-dot"></i> Destination
-                                <span class="required">*</span>
-                            </label>
-                            <div class="input-wrapper">
-                                <input 
-                                    type="text" 
-                                    id="destinationInput" 
-                                    name="destination" 
-                                    placeholder="e.g. Kyoto, Japan or Paris, France" 
-                                    required
-                                    autocomplete="off"
-                                >
+                        <!-- Origin & Destination Row -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="originInput">
+                                    <i class="fa-solid fa-plane-departure"></i> City of Origin
+                                    <span class="optional-label">(Optional)</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input 
+                                        type="text" 
+                                        id="originInput" 
+                                        name="city_of_origin" 
+                                        placeholder="e.g. San Francisco or New York" 
+                                        autocomplete="off"
+                                    >
+                                </div>
+                                <div class="field-error" id="originError"></div>
                             </div>
-                            <div class="field-error" id="destinationError"></div>
+
+                            <div class="form-group">
+                                <label for="destinationInput">
+                                    <i class="fa-solid fa-location-dot"></i> Destination
+                                    <span class="required">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input 
+                                        type="text" 
+                                        id="destinationInput" 
+                                        name="destination" 
+                                        placeholder="e.g. Kyoto, Japan or Paris, France" 
+                                        required
+                                        autocomplete="off"
+                                    >
+                                </div>
+                                <div class="field-error" id="destinationError"></div>
+                            </div>
                         </div>
 
-                        <!-- Budget & Duration Row -->
-                        <div class="form-row">
+                        <!-- Date, Budget & Duration Row -->
+                        <div class="form-row three-cols">
+                            <div class="form-group">
+                                <label for="departureDateInput">
+                                    <i class="fa-solid fa-calendar"></i> Departure Date
+                                    <span class="optional-label">(Optional)</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input 
+                                        type="date" 
+                                        id="departureDateInput" 
+                                        name="departure_date"
+                                    >
+                                </div>
+                                <div class="field-error" id="departureDateError"></div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="budgetInput">
                                     <i class="fa-solid fa-dollar-sign"></i> Total Budget (USD)
@@ -165,17 +199,32 @@
                     </div>
 
                     <div class="agent-pipeline-flow">
-                        <!-- Phase 1: Parallel Discovery -->
-                        <div class="pipeline-phase" id="phaseDiscovery">
+                        <!-- Phase 1: Flight & Transit Research -->
+                        <div class="pipeline-phase" id="phaseFlight">
                             <div class="phase-header">
-                                <div class="phase-badge"><i class="fa-solid fa-bolt"></i> Phase 1: Parallel Discovery</div>
-                                <span class="phase-status" id="discoveryStatus">Idle</span>
+                                <div class="phase-badge"><i class="fa-solid fa-plane"></i> Phase 1: Transport & Flights</div>
+                                <span class="phase-status" id="flightStatus">Idle</span>
                             </div>
-                            <div class="subagents-grid">
+                            <div class="subagents-grid single-agent">
                                 <div class="subagent-pill" id="agentFlight">
                                     <i class="fa-solid fa-plane-departure"></i>
                                     <span>FlightResearcher</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Phase Arrow -->
+                        <div class="flow-connector">
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </div>
+
+                        <!-- Phase 2: Parallel Discovery Team -->
+                        <div class="pipeline-phase" id="phaseDiscovery">
+                            <div class="phase-header">
+                                <div class="phase-badge"><i class="fa-solid fa-bolt"></i> Phase 2: Parallel Discovery</div>
+                                <span class="phase-status" id="discoveryStatus">Idle</span>
+                            </div>
+                            <div class="subagents-grid">
                                 <div class="subagent-pill" id="agentHotel">
                                     <i class="fa-solid fa-hotel"></i>
                                     <span>HotelResearcher</span>
@@ -192,10 +241,10 @@
                             <i class="fa-solid fa-arrow-down"></i>
                         </div>
 
-                        <!-- Phase 2: Loop Optimization Room -->
+                        <!-- Phase 3: Loop Optimization Room -->
                         <div class="pipeline-phase" id="phaseLoop">
                             <div class="phase-header">
-                                <div class="phase-badge"><i class="fa-solid fa-rotate"></i> Phase 2: Loop Optimization (Max 5x)</div>
+                                <div class="phase-badge"><i class="fa-solid fa-rotate"></i> Phase 3: Loop Optimization (Max 5x)</div>
                                 <span class="phase-status" id="loopStatus">Idle</span>
                             </div>
                             <div class="subagents-grid loop-grid">

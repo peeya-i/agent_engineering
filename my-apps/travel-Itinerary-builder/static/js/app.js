@@ -5,7 +5,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const form = document.getElementById('itineraryForm');
+    const originInput = document.getElementById('originInput');
     const destinationInput = document.getElementById('destinationInput');
+    const departureDateInput = document.getElementById('departureDateInput');
     const budgetInput = document.getElementById('budgetInput');
     const daysInput = document.getElementById('daysInput');
     const customInterestInput = document.getElementById('customInterestInput');
@@ -15,11 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submitBtn');
 
     // Errors
+    const originError = document.getElementById('originError');
     const destinationError = document.getElementById('destinationError');
+    const departureDateError = document.getElementById('departureDateError');
     const budgetError = document.getElementById('budgetError');
     const daysError = document.getElementById('daysError');
 
     // Architecture Indicators
+    const phaseFlight = document.getElementById('phaseFlight');
+    const flightStatus = document.getElementById('flightStatus');
     const discoveryStatus = document.getElementById('discoveryStatus');
     const loopStatus = document.getElementById('loopStatus');
     const agentFlight = document.getElementById('agentFlight');
@@ -119,12 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Form Validation
     // --------------------------------------------------------------------------
     function clearErrors() {
-        destinationError.style.display = 'none';
-        destinationError.textContent = '';
-        budgetError.style.display = 'none';
-        budgetError.textContent = '';
-        daysError.style.display = 'none';
-        daysError.textContent = '';
+        if (destinationError) { destinationError.style.display = 'none'; destinationError.textContent = ''; }
+        if (budgetError) { budgetError.style.display = 'none'; budgetError.textContent = ''; }
+        if (daysError) { daysError.style.display = 'none'; daysError.textContent = ''; }
     }
 
     function validateForm() {
@@ -166,35 +169,37 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.querySelector('.btn-loader').style.display = 'inline-flex';
 
             // Reset visual states
-            phaseDiscovery.classList.add('active');
-            phaseLoop.classList.remove('active');
-            discoveryStatus.textContent = 'Running';
-            discoveryStatus.className = 'phase-status running';
-            loopStatus.textContent = 'Waiting';
-            loopStatus.className = 'phase-status';
+            if (phaseFlight) phaseFlight.classList.add('active');
+            if (phaseDiscovery) phaseDiscovery.classList.remove('active');
+            if (phaseLoop) phaseLoop.classList.remove('active');
 
-            agentFlight.classList.add('active');
-            agentHotel.classList.add('active');
-            agentActivity.classList.add('active');
-            agentScheduler.classList.remove('active');
-            agentBudget.classList.remove('active');
+            if (flightStatus) { flightStatus.textContent = 'Running'; flightStatus.className = 'phase-status running'; }
+            if (discoveryStatus) { discoveryStatus.textContent = 'Waiting'; discoveryStatus.className = 'phase-status'; }
+            if (loopStatus) { loopStatus.textContent = 'Waiting'; loopStatus.className = 'phase-status'; }
+
+            if (agentFlight) agentFlight.classList.add('active');
+            if (agentHotel) agentHotel.classList.remove('active');
+            if (agentActivity) agentActivity.classList.remove('active');
+            if (agentScheduler) agentScheduler.classList.remove('active');
+            if (agentBudget) agentBudget.classList.remove('active');
         } else {
             submitBtn.disabled = false;
             submitBtn.querySelector('.btn-text').style.display = 'inline-flex';
             submitBtn.querySelector('.btn-loader').style.display = 'none';
 
-            discoveryStatus.textContent = 'Completed';
-            discoveryStatus.className = 'phase-status done';
-            loopStatus.textContent = 'Completed';
-            loopStatus.className = 'phase-status done';
+            if (flightStatus) { flightStatus.textContent = 'Completed'; flightStatus.className = 'phase-status done'; }
+            if (discoveryStatus) { discoveryStatus.textContent = 'Completed'; discoveryStatus.className = 'phase-status done'; }
+            if (loopStatus) { loopStatus.textContent = 'Completed'; loopStatus.className = 'phase-status done'; }
 
-            agentFlight.classList.remove('active');
-            agentHotel.classList.remove('active');
-            agentActivity.classList.remove('active');
-            agentScheduler.classList.remove('active');
-            agentBudget.classList.remove('active');
-            phaseDiscovery.classList.remove('active');
-            phaseLoop.classList.remove('active');
+            if (agentFlight) agentFlight.classList.remove('active');
+            if (agentHotel) agentHotel.classList.remove('active');
+            if (agentActivity) agentActivity.classList.remove('active');
+            if (agentScheduler) agentScheduler.classList.remove('active');
+            if (agentBudget) agentBudget.classList.remove('active');
+
+            if (phaseFlight) phaseFlight.classList.remove('active');
+            if (phaseDiscovery) phaseDiscovery.classList.remove('active');
+            if (phaseLoop) phaseLoop.classList.remove('active');
         }
     }
 
@@ -210,33 +215,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const payload = {
+            city_of_origin: originInput ? originInput.value.trim() : '',
             destination: destinationInput.value.trim(),
+            departure_date: departureDateInput ? departureDateInput.value : '',
             budget: parseFloat(budgetInput.value),
             days: parseInt(daysInput.value, 10),
             interests: getSelectedInterests()
         };
 
         clearLogs();
-        addLog(`Initiating trip pipeline for ${payload.destination} (${payload.days} days, budget: $${payload.budget.toFixed(2)})`);
+        const originTxt = payload.city_of_origin ? ` from ${payload.city_of_origin}` : '';
+        addLog(`Initiating trip pipeline for ${payload.destination}${originTxt} (${payload.days} days, budget: $${payload.budget.toFixed(2)})`);
         setPipelineRunning(true);
 
         try {
-            // Stage 1 animation simulation
+            // Stage 1: Flight Researcher
             setTimeout(() => {
-                addLog('Parallel Discovery Team searching flights, lodging, and attractions...');
-            }, 600);
+                addLog('Phase 1: FlightResearcher locating transit options and schedules...');
+            }, 400);
 
+            // Stage 2: Parallel Discovery Team
             setTimeout(() => {
-                phaseDiscovery.classList.remove('active');
-                phaseLoop.classList.add('active');
-                discoveryStatus.textContent = 'Done';
-                discoveryStatus.className = 'phase-status done';
-                loopStatus.textContent = 'Running';
-                loopStatus.className = 'phase-status running';
-                agentScheduler.classList.add('active');
-                agentBudget.classList.add('active');
-                addLog('Discovery data passed to Optimization Room (Scheduler & BudgetEnforcer)...');
-            }, 1800);
+                if (phaseFlight) phaseFlight.classList.remove('active');
+                if (flightStatus) { flightStatus.textContent = 'Done'; flightStatus.className = 'phase-status done'; }
+                if (phaseDiscovery) phaseDiscovery.classList.add('active');
+                if (discoveryStatus) { discoveryStatus.textContent = 'Running'; discoveryStatus.className = 'phase-status running'; }
+                if (agentHotel) agentHotel.classList.add('active');
+                if (agentActivity) agentActivity.classList.add('active');
+                addLog('Phase 2: Parallel Discovery Team researching lodging and attractions concurrently...');
+            }, 1200);
+
+            // Stage 3: Optimization Room
+            setTimeout(() => {
+                if (phaseDiscovery) phaseDiscovery.classList.remove('active');
+                if (discoveryStatus) { discoveryStatus.textContent = 'Done'; discoveryStatus.className = 'phase-status done'; }
+                if (phaseLoop) phaseLoop.classList.add('active');
+                if (loopStatus) { loopStatus.textContent = 'Running'; loopStatus.className = 'phase-status running'; }
+                if (agentScheduler) agentScheduler.classList.add('active');
+                if (agentBudget) agentBudget.classList.add('active');
+                addLog('Phase 3: Optimization Room (Scheduler & BudgetEnforcer) synthesizing and refining schedule...');
+            }, 2200);
 
             const response = await fetch('/api/generate', {
                 method: 'POST',
