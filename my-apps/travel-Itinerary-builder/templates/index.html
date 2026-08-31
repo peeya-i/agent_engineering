@@ -199,32 +199,17 @@
                     </div>
 
                     <div class="agent-pipeline-flow">
-                        <!-- Phase 1: Flight & Transit Research -->
-                        <div class="pipeline-phase" id="phaseFlight">
+                        <!-- Phase 1: Parallel Discovery Team -->
+                        <div class="pipeline-phase" id="phaseDiscovery">
                             <div class="phase-header">
-                                <div class="phase-badge"><i class="fa-solid fa-plane"></i> Phase 1: Transport & Flights</div>
-                                <span class="phase-status" id="flightStatus">Idle</span>
+                                <div class="phase-badge"><i class="fa-solid fa-bolt"></i> Phase 1: Parallel Discovery Team</div>
+                                <span class="phase-status" id="discoveryStatus">Idle</span>
                             </div>
-                            <div class="subagents-grid single-agent">
+                            <div class="subagents-grid">
                                 <div class="subagent-pill" id="agentFlight">
                                     <i class="fa-solid fa-plane-departure"></i>
                                     <span>FlightResearcher</span>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Phase Arrow -->
-                        <div class="flow-connector">
-                            <i class="fa-solid fa-arrow-down"></i>
-                        </div>
-
-                        <!-- Phase 2: Parallel Discovery Team -->
-                        <div class="pipeline-phase" id="phaseDiscovery">
-                            <div class="phase-header">
-                                <div class="phase-badge"><i class="fa-solid fa-bolt"></i> Phase 2: Parallel Discovery</div>
-                                <span class="phase-status" id="discoveryStatus">Idle</span>
-                            </div>
-                            <div class="subagents-grid">
                                 <div class="subagent-pill" id="agentHotel">
                                     <i class="fa-solid fa-hotel"></i>
                                     <span>HotelResearcher</span>
@@ -241,10 +226,10 @@
                             <i class="fa-solid fa-arrow-down"></i>
                         </div>
 
-                        <!-- Phase 3: Loop Optimization Room -->
+                        <!-- Phase 2: Loop Optimization Room -->
                         <div class="pipeline-phase" id="phaseLoop">
                             <div class="phase-header">
-                                <div class="phase-badge"><i class="fa-solid fa-rotate"></i> Phase 3: Loop Optimization (Max 5x)</div>
+                                <div class="phase-badge"><i class="fa-solid fa-rotate"></i> Phase 2: Loop Optimization (Max 5x)</div>
                                 <span class="phase-status" id="loopStatus">Idle</span>
                             </div>
                             <div class="subagents-grid loop-grid">
@@ -252,11 +237,8 @@
                                     <i class="fa-solid fa-calendar-check"></i>
                                     <span>Scheduler</span>
                                 </div>
-                                <div class="loop-arrow">
-                                    <i class="fa-solid fa-repeat"></i>
-                                </div>
                                 <div class="subagent-pill" id="agentBudget">
-                                    <i class="fa-solid fa-shield-halved"></i>
+                                    <i class="fa-solid fa-scale-balanced"></i>
                                     <span>BudgetEnforcer</span>
                                 </div>
                             </div>

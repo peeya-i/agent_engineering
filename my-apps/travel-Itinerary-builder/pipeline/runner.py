@@ -13,7 +13,7 @@ from google.adk.sessions import InMemorySessionService
 
 from .state import create_initial_state, validate_state
 from .agents import create_travel_pipeline
-from .tools import normalize_schedule
+from .tools import normalize_schedule, calculate_exact_itinerary_cost
 from .event_logger import JsonEventLoggerPlugin, append_event_to_json, append_usage_to_csv
 
 # Load .env file
@@ -216,7 +216,7 @@ def generate_fallback_itinerary(user_input: Dict[str, Any], reason: str = "") ->
         "iterations_taken": 1,
         "logs": [
             f"Initialized Discovery for {destination} ({days} days)",
-            f"Skill [activity-planner-skill] invoked: Curated multi-day attractions and dining highlights for {destination}",
+            f"Tool [save_activity_research] invoked: Curated multi-day attractions and dining highlights for {destination}",
             f"Tool [save_flight_research] invoked: Evaluated transport options for ${budget:.2f} budget constraint",
             f"Tool [save_hotel_research] invoked: Selected lodging tiers",
             f"Tool [save_itinerary_schedule] invoked: Generated baseline schedule with {len(schedule)} day plans",
@@ -287,9 +287,8 @@ async def run_itinerary_pipeline_async(
         prompt_text = (
             f"Generate a vacation itinerary for {origin_str}destination: '{destination}', "
             f"{dep_str}duration: {days} days, budget: ${budget:.2f} USD, and interests: {interests}. "
-            f"Follow the sequential workflow: 1. Get flight information (FlightResearcher). "
-            f"2. Research lodging and activities in parallel (DiscoveryTeam: HotelResearcher, ActivityPlanner). "
-            f"3. Synthesize schedule in loop, enforce budget constraints, and critique/refine if cost exceeds budget."
+            f"Follow the sequential workflow: 1. Research flights, hotels, and activities in parallel (DiscoveryTeam: FlightResearcher, HotelResearcher, ActivityPlanner). "
+            f"2. Synthesize schedule in loop, enforce budget constraints, and critique/refine if cost exceeds budget (OptimizationRoom: Scheduler, BudgetEnforcer)."
         )
 
         user_message = types.Content(
@@ -311,7 +310,7 @@ async def run_itinerary_pipeline_async(
             "debug_log": f"Started pipeline run for destination={destination}"
         })
 
-        log_step("Executing 1. FlightResearcher, then 2. Discovery Team (HotelResearcher, ActivityPlanner in parallel)...")
+        log_step("Executing Parallel Discovery Team (FlightResearcher, HotelResearcher, ActivityPlanner in parallel)...")
         iteration_count = 0
 
         async for event in runner.run_async(
@@ -322,16 +321,13 @@ async def run_itinerary_pipeline_async(
             if event.author:
                 log_step(f"Agent [{event.author}] active")
 
-            # Check and log function, tool, and skill calls
+            # Check and log function and tool calls
             if hasattr(event, "get_function_calls") and event.get_function_calls():
                 for fc in event.get_function_calls():
                     fn_name = getattr(fc, "name", str(fc))
-                    if "skill" in fn_name.lower() or event.author == "ActivityPlanner":
-                        log_step(f"Skill / Tool Invoked: [{fn_name}] by [{event.author}]")
-                    else:
-                        log_step(f"Tool Invoked: [{fn_name}] by [{event.author}]")
+                    log_step(f"Tool Invoked: [{fn_name}] by [{event.author}]")
 
-            # Check and log function, tool, and skill responses
+            # Check and log function and tool responses
             if hasattr(event, "get_function_responses") and event.get_function_responses():
                 for fr in event.get_function_responses():
                     fn_name = getattr(fr, "name", str(fr))
@@ -360,10 +356,20 @@ async def run_itinerary_pipeline_async(
             final_state["budget_approved"] = fallback["budget_approved"]
             final_state["critic_feedback"] = fallback["critic_feedback"]
         else:
-            final_state["current_itinerary"]["schedule"] = normalize_schedule(
+            norm_sched = normalize_schedule(
                 schedule,
                 total_days=int(initial_state["user_input"].get("days", 1))
             )
+            final_state["current_itinerary"]["schedule"] = norm_sched
+            final_state["current_itinerary"]["total_estimated_cost"] = calculate_exact_itinerary_cost(
+                final_state,
+                norm_sched,
+                provided_cost=final_state.get("current_itinerary", {}).get("total_estimated_cost")
+            )
+            # Re-evaluate budget approval based on exact cost
+            budget = float(initial_state["user_input"].get("budget", 0.0))
+            exact_cost = final_state["current_itinerary"]["total_estimated_cost"]
+            final_state["budget_approved"] = exact_cost <= budget
 
         append_event_to_json({
             "timestamp": datetime.now(timezone.utc).isoformat(),

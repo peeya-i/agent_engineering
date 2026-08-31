@@ -47,45 +47,6 @@ def save_hotel_research(
     return msg
 
 
-def fetch_internet_activities(
-    tool_context: ToolContext,
-    destination: str,
-    days: int,
-    interests: List[str],
-    query: str = ""
-) -> Dict[str, Any]:
-    """Fetches travel activity and attraction data from the internet for single or multi-day itineraries with error handling.
-    
-    Args:
-        destination: Target city or region.
-        days: Trip duration in days.
-        interests: List of user interests (e.g. food, culture, hiking).
-        query: Optional search query.
-        
-    Returns:
-        Structured dictionary containing status, activities list, and error handling messages.
-    """
-    try:
-        search_topic = query or f"top attractions landmarks restaurants things to do in {destination} for {', '.join(interests)}"
-        return {
-            "status": "success",
-            "destination": destination,
-            "days": days,
-            "interests": interests,
-            "query": search_topic,
-            "message": f"Successfully initiated multi-day internet activity research for {destination} ({days} days). Format results into structured activity objects."
-        }
-    except Exception as e:
-        error_msg = f"Error fetching internet activities for {destination}: {str(e)}"
-        return {
-            "status": "error",
-            "error_message": error_msg,
-            "destination": destination,
-            "days": days,
-            "fallback_available": True
-        }
-
-
 def save_activity_research(
     tool_context: ToolContext,
     activities: List[Dict[str, Any]]
@@ -244,6 +205,56 @@ def normalize_schedule(schedule: Any, total_days: int = 1) -> List[Dict[str, Any
     return [{"day": d, "events": result_days[d]} for d in sorted(result_days.keys())]
 
 
+def calculate_exact_itinerary_cost(
+    state: Dict[str, Any],
+    schedule: List[Dict[str, Any]],
+    provided_cost: Optional[float] = None
+) -> float:
+    """Calculates the exact total trip cost as:
+    Flight Cost + (Hotel Cost per night * duration) + Sum(all scheduled activities).
+    """
+    raw_research = state.get("raw_research", {})
+    user_input = state.get("user_input", {})
+    days = int(user_input.get("days", 1))
+
+    # 1. Flight Cost
+    flight_cost = 0.0
+    flights = raw_research.get("flights", [])
+    if isinstance(flights, list) and len(flights) > 0 and isinstance(flights[0], dict):
+        try:
+            flight_cost = float(flights[0].get("estimated_cost", 0.0))
+        except (ValueError, TypeError):
+            flight_cost = 0.0
+
+    # 2. Hotel Cost (per night * days)
+    hotel_cost = 0.0
+    hotels = raw_research.get("hotels", [])
+    if isinstance(hotels, list) and len(hotels) > 0 and isinstance(hotels[0], dict):
+        try:
+            rate = float(hotels[0].get("price_per_night", 0.0))
+            hotel_cost = rate * max(1, days)
+        except (ValueError, TypeError):
+            hotel_cost = 0.0
+
+    # 3. Activities Cost (sum of all events across all days in schedule)
+    activities_cost = 0.0
+    for day in schedule:
+        if isinstance(day, dict):
+            for ev in day.get("events", []):
+                if isinstance(ev, dict):
+                    try:
+                        activities_cost += float(ev.get("estimated_cost", 0.0))
+                    except (ValueError, TypeError):
+                        pass
+
+    computed_total = round(flight_cost + hotel_cost + activities_cost, 2)
+    # If flights and hotels are both not in raw_research yet, use provided_cost if available
+    if flight_cost == 0.0 and hotel_cost == 0.0 and provided_cost is not None and provided_cost > activities_cost:
+        return round(float(provided_cost), 2)
+
+    return computed_total
+
+
 def save_itinerary_schedule(
     tool_context: ToolContext,
     schedule: List[Dict[str, Any]],
@@ -260,19 +271,25 @@ def save_itinerary_schedule(
     days = int(user_input.get("days", 1))
     normalized_schedule = normalize_schedule(schedule, total_days=days)
 
+    exact_total_cost = calculate_exact_itinerary_cost(
+        tool_context.state,
+        normalized_schedule,
+        provided_cost=total_estimated_cost
+    )
+
     itinerary = {
-        "total_estimated_cost": float(total_estimated_cost),
+        "total_estimated_cost": exact_total_cost,
         "schedule": normalized_schedule
     }
     tool_context.state["current_itinerary"] = itinerary
-    msg = f"Successfully saved itinerary for {len(normalized_schedule)} days with total cost ${total_estimated_cost:.2f}."
+    msg = f"Successfully saved itinerary for {len(normalized_schedule)} days with total cost ${exact_total_cost:.2f} (sum of transit, lodging, and activities)."
     append_event_to_json({
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "event_type": "tool_execution",
         "agent": "Scheduler",
         "tool": "save_itinerary_schedule",
         "days_count": len(normalized_schedule),
-        "total_estimated_cost": float(total_estimated_cost),
+        "total_estimated_cost": exact_total_cost,
         "schedule": normalized_schedule,
         "result": msg
     })
@@ -288,11 +305,18 @@ def evaluate_budget_and_finalize(
     user_input = tool_context.state.get("user_input", {})
     budget = float(user_input.get("budget", 0.0))
     current_itinerary = tool_context.state.get("current_itinerary", {})
-    cost = float(current_itinerary.get("total_estimated_cost", 0.0))
+    schedule = current_itinerary.get("schedule", [])
+
+    cost = calculate_exact_itinerary_cost(
+        tool_context.state,
+        schedule,
+        provided_cost=current_itinerary.get("total_estimated_cost")
+    )
+    tool_context.state["current_itinerary"]["total_estimated_cost"] = cost
 
     if cost <= budget or approved:
         tool_context.state["budget_approved"] = True
-        tool_context.state["critic_feedback"] = "Budget approved: Total cost is within budget."
+        tool_context.state["critic_feedback"] = f"Budget approved: Total vacation cost (${cost:.2f}) is within budget (${budget:.2f})."
         # Escalate / exit the LoopAgent
         exit_loop(tool_context)
         msg = f"BUDGET APPROVED: Total cost (${cost:.2f}) is within budget (${budget:.2f}). Exiting optimization loop."
@@ -310,7 +334,8 @@ def evaluate_budget_and_finalize(
         return msg
     else:
         tool_context.state["budget_approved"] = False
-        feedback_msg = critic_feedback or f"Total cost (${cost:.2f}) exceeds budget (${budget:.2f}) by ${cost - budget:.2f}. Replace luxury items with budget alternatives."
+        overage = cost - budget
+        feedback_msg = critic_feedback or f"Total cost (${cost:.2f}) exceeds budget (${budget:.2f}) by ${overage:.2f}. Replace higher-cost lodging/flight options with budget alternatives and select free or lower-cost activities."
         tool_context.state["critic_feedback"] = feedback_msg
         msg = f"BUDGET REJECTED: {feedback_msg}. Optimization loop will trigger Scheduler for revision."
         append_event_to_json({

@@ -25,14 +25,9 @@ graph TD
 ### 1. Parallel Discovery Team (`ParallelAgent`)
 - **FlightResearcher**: Locates transport options, flight/train times, and costs.
 - **HotelResearcher**: Finds lodging options across luxury, mid-range, and budget tiers matching safety and user interests.
-- **ActivityPlanner**: Utilizes the **Gemini Skills Feature** (`activity-planner-skill`) and internet search to fetch, curate, and structure landmarks, dining, and multi-day tours with robust error handling.
+- **ActivityPlanner**: Compiles and structures landmarks, dining, and multi-day activities and tours.
 
-### 2. Gemini Skills Integration (`skills/activity-planner-skill`)
-- **Multi-Day Internet Research**: Fetches live attraction and dining data from the web scaled across the requested trip duration ($1$ to $30$ days).
-- **Structured Formatting**: Returns sanitized objects (`activity_name`, `category`, `estimated_cost`, `duration_hours`, `description`).
-- **Resilience & Error Handling**: Gracefully handles network timeouts, missing fields, or search failures by providing reliable fallback recommendations and informative messages.
-
-### 3. Loop Optimization Room (`LoopAgent`)
+### 2. Loop Optimization Room (`LoopAgent`)
 - **Scheduler**: Synthesizes discovery data into day-by-day itineraries and calculates total estimated costs. Crucially reads `critic_feedback` from prior iterations to adjust hotel tiers, select free/cheaper activities, or optimize dining.
 - **BudgetEnforcer**: Compares total costs against the user's budget.
   - If `cost <= budget`: sets `budget_approved = true` and exits the loop.

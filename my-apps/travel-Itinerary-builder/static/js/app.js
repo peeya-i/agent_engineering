@@ -169,17 +169,15 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.querySelector('.btn-loader').style.display = 'inline-flex';
 
             // Reset visual states
-            if (phaseFlight) phaseFlight.classList.add('active');
-            if (phaseDiscovery) phaseDiscovery.classList.remove('active');
+            if (phaseDiscovery) phaseDiscovery.classList.add('active');
             if (phaseLoop) phaseLoop.classList.remove('active');
 
-            if (flightStatus) { flightStatus.textContent = 'Running'; flightStatus.className = 'phase-status running'; }
-            if (discoveryStatus) { discoveryStatus.textContent = 'Waiting'; discoveryStatus.className = 'phase-status'; }
+            if (discoveryStatus) { discoveryStatus.textContent = 'Running'; discoveryStatus.className = 'phase-status running'; }
             if (loopStatus) { loopStatus.textContent = 'Waiting'; loopStatus.className = 'phase-status'; }
 
             if (agentFlight) agentFlight.classList.add('active');
-            if (agentHotel) agentHotel.classList.remove('active');
-            if (agentActivity) agentActivity.classList.remove('active');
+            if (agentHotel) agentHotel.classList.add('active');
+            if (agentActivity) agentActivity.classList.add('active');
             if (agentScheduler) agentScheduler.classList.remove('active');
             if (agentBudget) agentBudget.classList.remove('active');
         } else {
@@ -187,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.querySelector('.btn-text').style.display = 'inline-flex';
             submitBtn.querySelector('.btn-loader').style.display = 'none';
 
-            if (flightStatus) { flightStatus.textContent = 'Completed'; flightStatus.className = 'phase-status done'; }
             if (discoveryStatus) { discoveryStatus.textContent = 'Completed'; discoveryStatus.className = 'phase-status done'; }
             if (loopStatus) { loopStatus.textContent = 'Completed'; loopStatus.className = 'phase-status done'; }
 
@@ -197,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (agentScheduler) agentScheduler.classList.remove('active');
             if (agentBudget) agentBudget.classList.remove('active');
 
-            if (phaseFlight) phaseFlight.classList.remove('active');
             if (phaseDiscovery) phaseDiscovery.classList.remove('active');
             if (phaseLoop) phaseLoop.classList.remove('active');
         }
@@ -229,32 +225,24 @@ document.addEventListener('DOMContentLoaded', () => {
         setPipelineRunning(true);
 
         try {
-            // Stage 1: Flight Researcher
+            // Stage 1: Parallel Discovery Team
             setTimeout(() => {
-                addLog('Phase 1: FlightResearcher locating transit options and schedules...');
-            }, 400);
+                addLog('Phase 1: Parallel Discovery Team (FlightResearcher, HotelResearcher, ActivityPlanner) researching concurrently...');
+            }, 600);
 
-            // Stage 2: Parallel Discovery Team
-            setTimeout(() => {
-                if (phaseFlight) phaseFlight.classList.remove('active');
-                if (flightStatus) { flightStatus.textContent = 'Done'; flightStatus.className = 'phase-status done'; }
-                if (phaseDiscovery) phaseDiscovery.classList.add('active');
-                if (discoveryStatus) { discoveryStatus.textContent = 'Running'; discoveryStatus.className = 'phase-status running'; }
-                if (agentHotel) agentHotel.classList.add('active');
-                if (agentActivity) agentActivity.classList.add('active');
-                addLog('Phase 2: Parallel Discovery Team researching lodging and attractions concurrently...');
-            }, 1200);
-
-            // Stage 3: Optimization Room
+            // Stage 2: Optimization Room
             setTimeout(() => {
                 if (phaseDiscovery) phaseDiscovery.classList.remove('active');
                 if (discoveryStatus) { discoveryStatus.textContent = 'Done'; discoveryStatus.className = 'phase-status done'; }
                 if (phaseLoop) phaseLoop.classList.add('active');
                 if (loopStatus) { loopStatus.textContent = 'Running'; loopStatus.className = 'phase-status running'; }
+                if (agentFlight) agentFlight.classList.remove('active');
+                if (agentHotel) agentHotel.classList.remove('active');
+                if (agentActivity) agentActivity.classList.remove('active');
                 if (agentScheduler) agentScheduler.classList.add('active');
                 if (agentBudget) agentBudget.classList.add('active');
-                addLog('Phase 3: Optimization Room (Scheduler & BudgetEnforcer) synthesizing and refining schedule...');
-            }, 2200);
+                addLog('Phase 2: Optimization Room (Scheduler & BudgetEnforcer) synthesizing and refining schedule...');
+            }, 1800);
 
             const response = await fetch('/api/generate', {
                 method: 'POST',
@@ -303,14 +291,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const research = state.raw_research || {};
         const itinerary = state.current_itinerary || {};
         const schedule = itinerary.schedule || [];
-        const totalCost = itinerary.total_estimated_cost || 0.0;
-        const budget = userInput.budget || 0.0;
-        const isApproved = state.budget_approved;
-        const feedback = state.critic_feedback || 'Itinerary optimized.';
+        const budget = parseFloat(userInput.budget) || 0.0;
+        const totalDays = parseInt(userInput.days, 10) || 1;
+
+        // 1. Normalize schedule
+        let normalizedSchedule = [];
+        if (Array.isArray(schedule) && schedule.length > 0) {
+            const hasNestedEvents = schedule.every(item => item && Array.isArray(item.events));
+            if (hasNestedEvents) {
+                normalizedSchedule = schedule;
+            } else {
+                // Flat list of events
+                const eventsPerDay = Math.max(1, Math.ceil(schedule.length / totalDays));
+                for (let d = 1; d <= totalDays; d++) {
+                    const dayEvents = schedule.slice((d - 1) * eventsPerDay, d * eventsPerDay);
+                    normalizedSchedule.push({
+                        day: d,
+                        events: dayEvents.length > 0 ? dayEvents : [{
+                            time: '10:00 AM',
+                            title: `Day ${d} Local Exploration`,
+                            category: 'sightseeing',
+                            estimated_cost: 0.0,
+                            description: 'Explore local sights, cafes, and neighborhoods.'
+                        }]
+                    });
+                }
+            }
+        }
+
+        // 2. Compute exact sum: Flights + Lodgings + Activities
+        let totalFlights = 0;
+        if (research.flights && Array.isArray(research.flights) && research.flights.length > 0) {
+            totalFlights = parseFloat(research.flights[0].estimated_cost) || 0;
+        }
+
+        let totalLodging = 0;
+        if (research.hotels && Array.isArray(research.hotels) && research.hotels.length > 0) {
+            const perNight = parseFloat(research.hotels[0].price_per_night) || 0;
+            totalLodging = perNight * totalDays;
+        }
+
+        const totalActivitiesCost = normalizedSchedule.reduce((sum, day) => {
+            return sum + (day.events || []).reduce((dSum, ev) => dSum + (parseFloat(ev.estimated_cost) || 0), 0);
+        }, 0);
+
+        const computedSum = totalFlights + totalLodging + totalActivitiesCost;
+        const totalCost = (computedSum > 0) ? Math.round(computedSum * 100) / 100 : (parseFloat(itinerary.total_estimated_cost) || 0.0);
+        const isApproved = totalCost <= budget;
+        const feedback = state.critic_feedback || (isApproved ? 'Itinerary within budget.' : 'Total cost exceeds budget limit.');
 
         // Header Metrics
         resDestination.textContent = userInput.destination;
-        resTripTitle.textContent = `${userInput.days}-Day Vacation Plan`;
+        resTripTitle.textContent = `${totalDays}-Day Vacation Plan`;
         resTotalCost.textContent = `$${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         resBudget.textContent = `$${budget.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -333,34 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         resFeedbackText.textContent = feedback;
 
-        // 1. Render Daily Schedule
+        // 3. Render Daily Schedule Cards
         scheduleContainer.innerHTML = '';
-
-        // Normalize schedule if needed
-        let normalizedSchedule = [];
-        if (Array.isArray(schedule) && schedule.length > 0) {
-            const hasNestedEvents = schedule.every(item => item && Array.isArray(item.events));
-            if (hasNestedEvents) {
-                normalizedSchedule = schedule;
-            } else {
-                // Flat list of events
-                const totalDays = parseInt(userInput.days, 10) || 1;
-                const eventsPerDay = Math.max(1, Math.ceil(schedule.length / totalDays));
-                for (let d = 1; d <= totalDays; d++) {
-                    const dayEvents = schedule.slice((d - 1) * eventsPerDay, d * eventsPerDay);
-                    normalizedSchedule.push({
-                        day: d,
-                        events: dayEvents.length > 0 ? dayEvents : [{
-                            time: '10:00 AM',
-                            title: `Day ${d} Local Exploration`,
-                            category: 'sightseeing',
-                            estimated_cost: 0.0,
-                            description: 'Explore local sights, cafes, and neighborhoods.'
-                        }]
-                    });
-                }
-            }
-        }
 
         if (normalizedSchedule.length === 0) {
             scheduleContainer.innerHTML = '<div class="day-card"><p class="text-muted">No schedule items generated.</p></div>';
