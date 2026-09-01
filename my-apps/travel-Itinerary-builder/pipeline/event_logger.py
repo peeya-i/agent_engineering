@@ -225,24 +225,27 @@ class JsonEventLoggerPlugin(BasePlugin):
         tool_args: Dict[str, Any],
         tool_context: ToolContext
     ) -> Optional[Dict[str, Any]]:
-        """Records tool invocations before execution."""
+        """Records tool and skill invocations before execution."""
         agent_name = getattr(tool_context, "agent_name", "unknown_agent")
         tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
+        is_skill = "skill" in tool_name.lower() or hasattr(tool, "skills")
+        event_type = "skill_invocation" if is_skill else "tool_invocation"
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event_type": "tool_invocation",
+            "event_type": event_type,
             "agent": agent_name,
             "tool_name": tool_name,
+            "is_skill_tool": is_skill,
             "tool_arguments": serialize_for_json(tool_args),
         }
         append_event_to_json(entry, self.output_file)
         append_usage_to_csv({
             "timestamp": entry["timestamp"],
-            "event_type": "tool_invocation",
+            "event_type": event_type,
             "agent": agent_name,
             "request_contents": entry["tool_arguments"],
-            "debug_log": f"Tool {tool_name} invoked by {agent_name}"
+            "debug_log": f"{'Skill' if is_skill else 'Tool'} {tool_name} invoked by {agent_name}"
         }, self.csv_file)
         return None
 
@@ -254,9 +257,11 @@ class JsonEventLoggerPlugin(BasePlugin):
         tool_context: ToolContext,
         result: Any
     ) -> Optional[Dict[str, Any]]:
-        """Records tool outputs and responses after execution."""
+        """Records tool and skill outputs and responses after execution."""
         agent_name = getattr(tool_context, "agent_name", "unknown_agent")
         tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
+        is_skill = "skill" in tool_name.lower() or hasattr(tool, "skills")
+        event_type = "skill_response" if is_skill else "tool_response"
 
         state_dict = {}
         if hasattr(tool_context, "state"):
@@ -270,9 +275,10 @@ class JsonEventLoggerPlugin(BasePlugin):
 
         entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event_type": "tool_response",
+            "event_type": event_type,
             "agent": agent_name,
             "tool_name": tool_name,
+            "is_skill_tool": is_skill,
             "tool_arguments": serialize_for_json(tool_args),
             "tool_result": serialize_for_json(result),
             "state_snapshot": serialize_for_json(state_dict)
@@ -280,9 +286,9 @@ class JsonEventLoggerPlugin(BasePlugin):
         append_event_to_json(entry, self.output_file)
         append_usage_to_csv({
             "timestamp": entry["timestamp"],
-            "event_type": "tool_response",
+            "event_type": event_type,
             "agent": agent_name,
             "response": entry["tool_result"],
-            "debug_log": f"Tool {tool_name} completed for agent {agent_name}"
+            "debug_log": f"{'Skill' if is_skill else 'Tool'} {tool_name} completed for agent {agent_name}"
         }, self.csv_file)
         return None

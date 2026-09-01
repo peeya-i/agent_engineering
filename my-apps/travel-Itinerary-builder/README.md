@@ -28,7 +28,7 @@ graph TD
 - **ActivityPlanner**: Compiles and structures landmarks, dining, and multi-day activities and tours.
 
 ### 2. Loop Optimization Room (`LoopAgent`)
-- **Scheduler**: Synthesizes discovery data into day-by-day itineraries and calculates total estimated costs. Crucially reads `critic_feedback` from prior iterations to adjust hotel tiers, select free/cheaper activities, or optimize dining.
+- **Scheduler**: Utilizes the **Gemini Skills Integration** (`itinerary-enhancer-skill`) to construct engaging, themed day-by-day schedules with strict **geographic clustering** (grouping daily activities within the same neighborhood to minimize transit waste). Synthesizes discovery data, calculates total costs, and adapts to `critic_feedback` during iterative refinement.
 - **BudgetEnforcer**: Compares total costs against the user's budget.
   - If `cost <= budget`: sets `budget_approved = true` and exits the loop.
   - If `cost > budget`: sets `budget_approved = false`, generates specific `critic_feedback`, and triggers the next iteration (capped at 5 iterations).

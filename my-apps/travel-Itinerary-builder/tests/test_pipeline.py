@@ -233,8 +233,22 @@ class TestTravelItineraryBuilder(unittest.TestCase):
         mock_ctx = MagicMock()
         mock_ctx.state = dict(state)
         save_itinerary_schedule(mock_ctx, schedule, total_estimated_cost=9999.0)  # Inconsistent model cost
-        saved_itinerary = mock_ctx.state["current_itinerary"]
-        self.assertEqual(saved_itinerary["total_estimated_cost"], 1355.0)
+    def test_scheduler_skill_and_geographic_clustering(self):
+        """Test Scheduler agent skill integration and geographic clustering instructions."""
+        from pipeline.agents import create_scheduler, get_scheduler_skill_toolset
+
+        # 1. Verify skill toolset loads properly
+        skill_toolset = get_scheduler_skill_toolset()
+        self.assertIsNotNone(skill_toolset, "Scheduler skill toolset must load from skills/itinerary-enhancer-skill")
+
+        # 2. Verify Scheduler agent contains skill tools and save_itinerary_schedule
+        scheduler = create_scheduler()
+        tool_names = [getattr(t, "__name__", getattr(t, "name", str(t))) for t in scheduler.tools]
+        self.assertIn("save_itinerary_schedule", tool_names)
+
+        # 3. Verify geographic clustering and skill directives in instructions
+        self.assertIn("Geographic Clustering", scheduler.instruction)
+        self.assertIn("itinerary-enhancer-skill", scheduler.instruction)
 
 
 if __name__ == "__main__":

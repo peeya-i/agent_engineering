@@ -216,9 +216,10 @@ def generate_fallback_itinerary(user_input: Dict[str, Any], reason: str = "") ->
         "iterations_taken": 1,
         "logs": [
             f"Initialized Discovery for {destination} ({days} days)",
-            f"Tool [save_activity_research] invoked: Curated multi-day attractions and dining highlights for {destination}",
             f"Tool [save_flight_research] invoked: Evaluated transport options for ${budget:.2f} budget constraint",
             f"Tool [save_hotel_research] invoked: Selected lodging tiers",
+            f"Tool [save_activity_research] invoked: Curated multi-day attractions and dining highlights for {destination}",
+            f"Skill [itinerary-enhancer-skill] invoked: Clustered daily activities geographically and enriched with local experiences for {destination}",
             f"Tool [save_itinerary_schedule] invoked: Generated baseline schedule with {len(schedule)} day plans",
             f"Tool [evaluate_budget_and_finalize] invoked: Evaluated total cost ${total_cost:.2f} against ${budget:.2f} budget"
         ]

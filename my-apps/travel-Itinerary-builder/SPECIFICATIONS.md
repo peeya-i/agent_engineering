@@ -18,7 +18,7 @@ Orchestrated by the `ParallelAgent`, the following sub-agents execute concurrent
 
 ### 3. Loop Agent (Optimization Room)
 Orchestrated by the `LoopAgent`, these agents refine the itinerary:
-- **Scheduler:** Reads research, builds the day-by-day sequence, and calculates total costs.
+- **Scheduler:** Reads research, builds the day-by-day sequence, group daiy activities to make sure they are geographically close and efficient to travel between, and calculates total costs. Implement Gemini skills in this agent to make the itinerary more interesting and fun for the user.
 - **BudgetEnforcer:** Validates the itinerary against the user's budget.
 
 ### Loop Constraints

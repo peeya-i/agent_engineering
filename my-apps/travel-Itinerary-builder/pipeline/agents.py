@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 from typing import Optional
 from google.adk.agents import Agent, ParallelAgent, LoopAgent, SequentialAgent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
 from .tools import (
     save_flight_research,
     save_hotel_research,
@@ -17,6 +19,18 @@ logger = logging.getLogger(__name__)
 def get_gemini_model() -> str:
     """Retrieves the Gemini model from environment or defaults to gemini-2.0-flash."""
     return os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
+
+def get_scheduler_skill_toolset() -> Optional[SkillToolset]:
+    """Loads the itinerary enhancer skill toolset from the skills directory."""
+    skill_dir = Path(__file__).resolve().parent.parent / "skills" / "itinerary-enhancer-skill"
+    if skill_dir.exists() and (skill_dir / "SKILL.md").exists():
+        try:
+            skill = load_skill_from_dir(skill_dir)
+            return SkillToolset(skills=[skill])
+        except Exception as e:
+            logger.warning("Could not load itinerary enhancer skill from %s: %s", skill_dir, e)
+    return None
 
 
 def create_flight_researcher(model: Optional[str] = None) -> Agent:
@@ -102,61 +116,66 @@ Always execute the tool call."""
 
 
 def create_scheduler(model: Optional[str] = None) -> Agent:
-    """Agent that builds day-by-day sequence and refines based on critic feedback."""
+    """Agent that builds geographically clustered, travel-efficient day-by-day itineraries utilizing Gemini skills."""
     model_name = model or get_gemini_model()
-    instruction = """You are the Scheduler agent in the Optimization Room.
-Your goal is to build a realistic, day-by-day travel schedule covering all days from Day 1 to Day N and calculate total estimated costs.
+    skill_toolset = get_scheduler_skill_toolset()
+    tools = [save_itinerary_schedule]
+    if skill_toolset:
+        tools.append(skill_toolset)
+
+    instruction = """You are the Scheduler agent in the Optimization Room utilizing the Gemini `itinerary-enhancer-skill`.
+Your goal is to build a realistic, exciting, and geographically efficient day-by-day vacation schedule covering all days from Day 1 to Day N and calculate total estimated costs.
 
 Read the central state:
-- `user_input`: destination, days, budget, interests
+- `user_input`: destination, days, budget, interests, origin, departure date
 - `raw_research`: flights, hotels, activities
 - `critic_feedback`: CRITICAL! Read any feedback from previous iterations.
 
-If `critic_feedback` is present (e.g., "cost exceeds budget by $X, replace 5-star hotel with 3-star, pick free walking tours"):
-- You MUST adapt the plan! Downgrade the chosen hotel tier (e.g. choose mid-range or budget from raw_research), select free or cheaper activity alternatives, or reduce dining costs to satisfy the budget constraint.
-- Explicitly address the feedback in your schedule choices.
+Key Responsibilities & Directives:
+1. Geographic Clustering & Travel Efficiency:
+   - For each day, group all activities (morning, lunch, afternoon, evening) within the same neighborhood, district, or transit corridor so the traveler does not waste hours commuting across town.
+   - Sequence activities logically so transit between consecutive stops is quick, walkable, or along a direct transit line.
 
-Calculate `total_estimated_cost`:
-- Selected Roundtrip Flight cost
-- Selected Lodging cost = (chosen hotel price_per_night * days)
-- Selected Activities & Dining cost = sum of event costs across all days
+2. Make Itinerary Fun, Engaging & Themed:
+   - Use your Gemini itinerary enhancer skill to give each day an engaging title/theme (e.g., "Day 1: Old Town Heritage & Riverside Dining", "Day 2: Mountain Temples & Night Market Foodie Trail").
+   - Include memorable local recommendations, hidden gems, and photo spots that match the user's specific interests.
 
-Construct a detailed day-by-day schedule:
-- Must contain an entry for each day from Day 1 to Day N (where N = user_input.days).
-- The `schedule` parameter MUST be a list of day objects with `day` (integer) and `events` (list of event objects):
-  [
-    {
-      "day": 1,
-      "events": [
-        {
-          "time": "09:00 AM",
-          "title": "Morning: Arrival & City Exploration",
-          "category": "sightseeing",
-          "estimated_cost": 25.0,
-          "description": "Visit historic downtown landmarks"
-        },
-        {
-          "time": "01:00 PM",
-          "title": "Lunch: Regional Cuisine",
-          "category": "dining",
-          "estimated_cost": 20.0,
-          "description": "Authentic local specialty lunch"
-        }
-      ]
-    },
-    {
-      "day": 2,
-      "events": [...]
-    }
-  ]
+3. Adapt to Critic Feedback & Budget Boundaries:
+   - If `critic_feedback` is present (e.g., "cost exceeds budget by $X, replace 5-star hotel with 3-star, pick free walking tours"):
+     - You MUST adapt the plan! Downgrade the chosen hotel tier (e.g. choose mid-range or budget from raw_research), select free or cheaper activity alternatives, or reduce dining costs to satisfy the budget constraint.
+     - Explicitly address the feedback in your schedule choices.
 
-Call `save_itinerary_schedule(schedule=[...], total_estimated_cost=...)` to update state.
+4. Calculate & Save Total Cost:
+   - Calculate `total_estimated_cost`: selected flight + (chosen hotel price_per_night * days) + sum of event costs across all days.
+   - Construct a detailed day-by-day schedule for Day 1 to Day N with:
+     [
+       {
+         "day": 1,
+         "events": [
+           {
+             "time": "09:00 AM",
+             "title": "Morning: Arrival & Neighborhood Heritage Walk",
+             "category": "culture",
+             "estimated_cost": 15.0,
+             "description": "Explore iconic district temples and viewpoints."
+           },
+           {
+             "time": "01:00 PM",
+             "title": "Lunch: Local Specialty Bistro",
+             "category": "dining",
+             "estimated_cost": 20.0,
+             "description": "Authentic regional lunch nearby."
+           }
+         ]
+       }
+     ]
+   - Call `save_itinerary_schedule(schedule=[...], total_estimated_cost=...)`.
 Always execute the tool call."""
     return Agent(
         name="Scheduler",
         model=model_name,
         instruction=instruction,
-        tools=[save_itinerary_schedule]
+        tools=tools
     )
 
 
