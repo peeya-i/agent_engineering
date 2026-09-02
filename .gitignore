@@ -1,0 +1,4 @@
+# Scratch space for testing generated class packages.
+# Whole directory is ignored: it holds extracted ZIPs, virtualenvs, and .env
+# files containing real API keys. Nothing in here is course content.
+.testbed/
