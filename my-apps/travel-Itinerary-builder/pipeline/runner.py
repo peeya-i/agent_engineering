@@ -297,9 +297,12 @@ async def run_itinerary_pipeline_async(
             parts=[types.Part.from_text(text=prompt_text)]
         )
 
+        itinerary_id = f"itin_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
         append_event_to_json({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": "pipeline_start",
+            "itinerary_id": itinerary_id,
             "user_input": initial_state["user_input"],
             "prompt": prompt_text
         })
@@ -308,7 +311,7 @@ async def run_itinerary_pipeline_async(
             "event_type": "pipeline_start",
             "user_input": initial_state["user_input"],
             "prompt": prompt_text,
-            "debug_log": f"Started pipeline run for destination={destination}"
+            "debug_log": f"Started pipeline run {itinerary_id} for destination={destination}"
         })
 
         log_step("Executing Parallel Discovery Team (FlightResearcher, HotelResearcher, ActivityPlanner in parallel)...")
@@ -375,6 +378,7 @@ async def run_itinerary_pipeline_async(
         append_event_to_json({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": "pipeline_complete",
+            "itinerary_id": itinerary_id,
             "final_state": final_state
         })
         append_usage_to_csv({
@@ -382,10 +386,11 @@ async def run_itinerary_pipeline_async(
             "event_type": "pipeline_complete",
             "user_input": initial_state["user_input"],
             "response": final_state.get("current_itinerary"),
-            "debug_log": f"Completed pipeline run. Approved={final_state.get('budget_approved')}"
+            "debug_log": f"Completed pipeline run {itinerary_id}. Approved={final_state.get('budget_approved')}"
         })
 
         final_state["logs"] = logs
+        final_state["itinerary_id"] = itinerary_id
         return final_state
 
     except Exception as e:
@@ -416,9 +421,11 @@ async def run_itinerary_pipeline_async(
             initial_state["user_input"],
             reason="Gemini API Quota Exhausted (429)" if is_quota_limit else f"Graceful Recovery: {type(e).__name__}"
         )
+        current_itin_id = locals().get("itinerary_id") or f"itin_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
         append_event_to_json({
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": "pipeline_fallback",
+            "itinerary_id": current_itin_id,
             "error": str(e),
             "fallback_state": fallback
         })
@@ -427,9 +434,10 @@ async def run_itinerary_pipeline_async(
             "event_type": "pipeline_fallback",
             "user_input": initial_state["user_input"],
             "response": fallback.get("current_itinerary"),
-            "debug_log": f"Fallback recovery engaged: {str(e)[:100]}"
+            "debug_log": f"Fallback recovery engaged for {current_itin_id}: {str(e)[:100]}"
         })
         fallback["logs"] = logs + fallback.get("logs", [])
+        fallback["itinerary_id"] = current_itin_id
         return fallback
 
 

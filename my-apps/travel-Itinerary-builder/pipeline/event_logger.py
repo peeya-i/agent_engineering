@@ -138,6 +138,186 @@ def read_events_from_json(file_path: Optional[Path] = None) -> List[Dict[str, An
     return events_list
 
 
+def summarize_event_for_display(ev: Dict[str, Any]) -> Dict[str, Any]:
+    """Generates a human-friendly summary of an event for UI rendering."""
+    event_type = ev.get("event_type", "unknown")
+    agent = ev.get("agent") or "System"
+    summary = ""
+    details: Dict[str, Any] = {}
+
+    if event_type == "pipeline_start":
+        u_in = ev.get("user_input", {})
+        dest = u_in.get("destination", "Unknown")
+        budget = u_in.get("budget", 0)
+        days = u_in.get("days", 0)
+        origin = u_in.get("city_of_origin") or u_in.get("origin")
+        origin_str = f" from {origin}" if origin else ""
+        summary = f"Pipeline initialized for {dest}{origin_str} ({days} days, budget ${budget})"
+        details = {"user_input": u_in, "prompt": ev.get("prompt")}
+
+    elif event_type == "model_request":
+        model = ev.get("model", "gemini")
+        summary = f"Prompt request dispatched to model [{model}]"
+        req_c = ev.get("request_contents")
+        details = {"request_contents": req_c, "config": ev.get("config")}
+
+    elif event_type == "model_response":
+        model_ver = ev.get("model_version") or ev.get("model") or "gemini"
+        fr = ev.get("finish_reason", "STOP")
+        summary = f"Model response received ({model_ver}) [Finish: {fr}]"
+        details = {
+            "response_content": ev.get("response_content") or ev.get("response"),
+            "usage_metadata": ev.get("usage_metadata")
+        }
+
+    elif event_type in ("tool_call", "tool_invocation"):
+        tool_name = ev.get("tool_name", "tool")
+        is_skill = ev.get("is_skill_tool", False)
+        prefix = "Skill" if is_skill else "Tool"
+        summary = f"{prefix} [{tool_name}] called with arguments"
+        details = {"tool_name": tool_name, "tool_arguments": ev.get("tool_arguments")}
+
+    elif event_type in ("tool_response", "skill_response"):
+        tool_name = ev.get("tool_name", "tool")
+        is_skill = ev.get("is_skill_tool", False)
+        prefix = "Skill" if is_skill else "Tool"
+        res_snippet = str(ev.get("tool_result", ""))[:120]
+        summary = f"{prefix} [{tool_name}] response returned: {res_snippet}"
+        details = {
+            "tool_name": tool_name,
+            "tool_result": ev.get("tool_result"),
+            "state_snapshot": ev.get("state_snapshot")
+        }
+
+    elif event_type == "tool_execution":
+        tool_name = ev.get("tool", "tool")
+        summary = f"Executed [{tool_name}]: {ev.get('result', '')}"
+        details = ev
+
+    elif event_type == "pipeline_complete":
+        st = ev.get("final_state", {})
+        cost = st.get("current_itinerary", {}).get("total_estimated_cost", 0.0)
+        approved = st.get("budget_approved", False)
+        status_txt = "Approved" if approved else "Over Budget"
+        summary = f"Pipeline finalized. Cost: ${cost:.2f} ({status_txt})"
+        details = {"final_state": st}
+
+    elif event_type == "pipeline_fallback":
+        err = ev.get("error", "Unknown error")
+        summary = f"Fallback recovery triggered: {str(err)[:100]}"
+        details = {"error": err, "fallback_state": ev.get("fallback_state")}
+
+    else:
+        summary = f"Event [{event_type}] processed"
+        details = ev
+
+    return {
+        "timestamp": ev.get("timestamp"),
+        "event_type": event_type,
+        "agent": agent,
+        "summary": summary,
+        "details": details,
+        "raw_event": ev
+    }
+
+
+def get_all_itineraries_with_events(file_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """Reads events from events.json and groups them into structured itinerary runs."""
+    events = read_events_from_json(file_path)
+    if not events:
+        return []
+
+    itineraries: List[Dict[str, Any]] = []
+    current_itin: Optional[Dict[str, Any]] = None
+
+    for ev in events:
+        etype = ev.get("event_type")
+
+        # Explicit itinerary_id tag if present, else segment by pipeline_start
+        if etype == "pipeline_start":
+            if current_itin:
+                itineraries.append(current_itin)
+
+            u_in = ev.get("user_input", {})
+            current_itin = {
+                "id": ev.get("itinerary_id") or f"itin_{len(itineraries) + 1}",
+                "start_time": ev.get("timestamp"),
+                "end_time": None,
+                "destination": u_in.get("destination", "Unknown Destination"),
+                "origin": u_in.get("city_of_origin") or u_in.get("origin", ""),
+                "departure_date": u_in.get("departure_date", ""),
+                "budget": u_in.get("budget"),
+                "days": u_in.get("days"),
+                "interests": u_in.get("interests", []),
+                "total_estimated_cost": None,
+                "budget_approved": None,
+                "status": "In Progress",
+                "events": [],
+                "logs": []
+            }
+            current_itin["events"].append(summarize_event_for_display(ev))
+            dest = current_itin["destination"]
+            days = current_itin["days"]
+            current_itin["logs"].append(f"Started pipeline for {dest} ({days} days)")
+
+        elif current_itin is not None:
+            processed_event = summarize_event_for_display(ev)
+            current_itin["events"].append(processed_event)
+
+            # Extract logs
+            if etype in ("tool_call", "tool_invocation"):
+                t_name = ev.get("tool_name", "tool")
+                agent_name = ev.get("agent", "Agent")
+                current_itin["logs"].append(f"Tool Invoked: [{t_name}] by [{agent_name}]")
+            elif etype in ("tool_response", "skill_response"):
+                t_name = ev.get("tool_name", "tool")
+                current_itin["logs"].append(f"Tool Completed: [{t_name}]")
+            elif etype == "model_request":
+                current_itin["logs"].append(f"Agent [{ev.get('agent', 'System')}] querying LLM...")
+            elif etype == "model_response":
+                current_itin["logs"].append(f"Agent [{ev.get('agent', 'System')}] received model response")
+
+            if etype in ("pipeline_complete", "pipeline_fallback"):
+                current_itin["end_time"] = ev.get("timestamp")
+                current_itin["status"] = "Completed" if etype == "pipeline_complete" else "Fallback"
+                state = ev.get("final_state") or ev.get("fallback_state") or {}
+                if state:
+                    itin_block = state.get("current_itinerary", {})
+                    current_itin["total_estimated_cost"] = itin_block.get("total_estimated_cost")
+                    current_itin["budget_approved"] = state.get("budget_approved")
+                    if not current_itin["origin"]:
+                        current_itin["origin"] = state.get("user_input", {}).get("city_of_origin", "")
+                    if state.get("logs"):
+                        for l in state["logs"]:
+                            if l not in current_itin["logs"]:
+                                current_itin["logs"].append(l)
+
+    if current_itin:
+        itineraries.append(current_itin)
+
+    # Post-process itineraries: ensure unique IDs and calculate counts
+    for idx, itin in enumerate(itineraries):
+        itin["event_count"] = len(itin["events"])
+        # Format display ID
+        itin["display_id"] = f"ITIN-{idx+1:03d}"
+
+    # Return reverse-chronological (newest first)
+    return list(reversed(itineraries))
+
+
+def get_itinerary_by_id(
+    itinerary_id: str,
+    file_path: Optional[Path] = None
+) -> Optional[Dict[str, Any]]:
+    """Returns a specific itinerary with full events and logs by ID."""
+    itineraries = get_all_itineraries_with_events(file_path)
+    for itin in itineraries:
+        if itin.get("id") == itinerary_id or itin.get("display_id") == itinerary_id:
+            return itin
+    return None
+
+
+
 class JsonEventLoggerPlugin(BasePlugin):
     """ADK Plugin to capture model messages, model responses, and tool calls into events.json."""
 

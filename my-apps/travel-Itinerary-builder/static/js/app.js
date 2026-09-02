@@ -275,6 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Smooth scroll to results
             resultsSection.scrollIntoView({ behavior: 'smooth' });
 
+            // Refresh history in background
+            loadItinerariesHistory();
+
         } catch (err) {
             console.error('Request failed:', err);
             addLog(`Network or execution error: ${err.message}`);
@@ -460,33 +463,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 3. Render Budget Breakdown Table
-        let totalFlights = 0;
+        let totalFlightsBreakdown = 0;
         if (research.flights && research.flights.length > 0) {
-            totalFlights = parseFloat(research.flights[0].estimated_cost) || 0;
+            totalFlightsBreakdown = parseFloat(research.flights[0].estimated_cost) || 0;
         }
 
-        let totalLodging = 0;
+        let totalLodgingBreakdown = 0;
         if (research.hotels && research.hotels.length > 0) {
             const perNight = parseFloat(research.hotels[0].price_per_night) || 0;
-            totalLodging = perNight * (userInput.days || 1);
+            totalLodgingBreakdown = perNight * (userInput.days || 1);
         }
 
-        const totalActivitiesCost = normalizedSchedule.reduce((sum, day) => {
+        const totalActivitiesCostBreakdown = normalizedSchedule.reduce((sum, day) => {
             return sum + (day.events || []).reduce((dSum, ev) => dSum + (parseFloat(ev.estimated_cost) || 0), 0);
         }, 0);
 
         budgetTable.innerHTML = `
             <div class="budget-row">
                 <span><i class="fa-solid fa-plane"></i> Estimated Roundtrip Transit</span>
-                <span>$${totalFlights.toFixed(2)}</span>
+                <span>$${totalFlightsBreakdown.toFixed(2)}</span>
             </div>
             <div class="budget-row">
                 <span><i class="fa-solid fa-hotel"></i> Lodging (${userInput.days} nights)</span>
-                <span>$${totalLodging.toFixed(2)}</span>
+                <span>$${totalLodgingBreakdown.toFixed(2)}</span>
             </div>
             <div class="budget-row">
                 <span><i class="fa-solid fa-utensils"></i> Activities, Dining & Attractions</span>
-                <span>$${totalActivitiesCost.toFixed(2)}</span>
+                <span>$${totalActivitiesCostBreakdown.toFixed(2)}</span>
             </div>
             <div class="budget-row total">
                 <span>Total Estimated Cost</span>
@@ -498,11 +501,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --------------------------------------------------------------------------
-    // Tab Navigation
+    // Results Sub-Tab Navigation
     // --------------------------------------------------------------------------
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.results-tabs .tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.results-tabs .tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
 
             btn.classList.add('active');
@@ -515,20 +518,619 @@ document.addEventListener('DOMContentLoaded', () => {
     // --------------------------------------------------------------------------
     // Copy JSON State
     // --------------------------------------------------------------------------
-    copyJsonBtn.addEventListener('click', () => {
-        if (!currentJsonState) return;
-        navigator.clipboard.writeText(JSON.stringify(currentJsonState, null, 2))
-            .then(() => {
-                const originalText = copyJsonBtn.innerHTML;
-                copyJsonBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-                setTimeout(() => {
-                    copyJsonBtn.innerHTML = originalText;
-                }, 2000);
-            })
-            .catch(err => {
-                alert('Could not copy to clipboard: ' + err);
+    if (copyJsonBtn) {
+        copyJsonBtn.addEventListener('click', () => {
+            if (!currentJsonState) return;
+            navigator.clipboard.writeText(JSON.stringify(currentJsonState, null, 2))
+                .then(() => {
+                    const originalText = copyJsonBtn.innerHTML;
+                    copyJsonBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyJsonBtn.innerHTML = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    alert('Could not copy to clipboard: ' + err);
+                });
+        });
+    }
+
+    // ==========================================================================
+    // ITINERARY HISTORY & EVENT LOGS (Two Coordinated Tables View)
+    // ==========================================================================
+
+    // Top Navigation Tabs
+    const topNavBtns = document.querySelectorAll('.top-nav-btn');
+    const appViews = document.querySelectorAll('.app-view');
+    const navItineraryCount = document.getElementById('navItineraryCount');
+
+    // Quick Stats Elements
+    const statTotalItineraries = document.getElementById('statTotalItineraries');
+    const statApprovedItineraries = document.getElementById('statApprovedItineraries');
+    const statOverBudgetItineraries = document.getElementById('statOverBudgetItineraries');
+    const statTotalEventsCount = document.getElementById('statTotalEventsCount');
+
+    // Table 1 Elements
+    const itinerariesTableBody = document.getElementById('itinerariesTableBody');
+    const itinSearchInput = document.getElementById('itinSearchInput');
+    const itinStatusFilter = document.getElementById('itinStatusFilter');
+    const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+    const visibleItinerariesCount = document.getElementById('visibleItinerariesCount');
+
+    // Table 2 Elements
+    const eventsTableBody = document.getElementById('eventsTableBody');
+    const selectedItinSubtitle = document.getElementById('selectedItinSubtitle');
+    const selectedItinMetaBar = document.getElementById('selectedItinMetaBar');
+    const selMetaDestination = document.getElementById('selMetaDestination');
+    const selMetaId = document.getElementById('selMetaId');
+    const selMetaBudget = document.getElementById('selMetaBudget');
+    const selMetaCost = document.getElementById('selMetaCost');
+    const selMetaStatusBadge = document.getElementById('selMetaStatusBadge');
+    const selMetaStarted = document.getElementById('selMetaStarted');
+    const eventFilterTabs = document.getElementById('eventFilterTabs');
+    const eventSearchInput = document.getElementById('eventSearchInput');
+    const eventsTableWrapper = document.getElementById('eventsTableWrapper');
+    const eventsLogsFeedWrapper = document.getElementById('eventsLogsFeedWrapper');
+    const selectedItinLogsFeed = document.getElementById('selectedItinLogsFeed');
+    const visibleEventsCount = document.getElementById('visibleEventsCount');
+
+    // Counts on filter buttons
+    const countAllEvents = document.getElementById('countAllEvents');
+    const countModelEvents = document.getElementById('countModelEvents');
+    const countToolEvents = document.getElementById('countToolEvents');
+    const countPipelineEvents = document.getElementById('countPipelineEvents');
+
+    // Modal Elements
+    const payloadModal = document.getElementById('payloadModal');
+    const modalEventTitle = document.getElementById('modalEventTitle');
+    const modalPayloadMeta = document.getElementById('modalPayloadMeta');
+    const modalPayloadCode = document.getElementById('modalPayloadCode');
+    const copyPayloadBtn = document.getElementById('copyPayloadBtn');
+    const closePayloadModalBtn = document.getElementById('closePayloadModalBtn');
+    const closeModalActionBtn = document.getElementById('closeModalActionBtn');
+
+    // State Variables
+    let allItineraries = [];
+    let selectedItinerary = null;
+    let currentEventFilter = 'all';
+    let currentEventSearch = '';
+
+    // --------------------------------------------------------------------------
+    // Top Navigation Switching
+    // --------------------------------------------------------------------------
+    topNavBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetViewId = btn.getAttribute('data-view');
+
+            topNavBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            appViews.forEach(view => {
+                if (view.id === targetViewId) {
+                    view.style.display = 'block';
+                    view.classList.add('active');
+                } else {
+                    view.style.display = 'none';
+                    view.classList.remove('active');
+                }
             });
+
+            if (targetViewId === 'viewHistory') {
+                loadItinerariesHistory();
+            }
+        });
     });
+
+    // --------------------------------------------------------------------------
+    // Fetch History & Itineraries
+    // --------------------------------------------------------------------------
+    async function loadItinerariesHistory() {
+        try {
+            const response = await fetch('/api/itineraries');
+            const resData = await response.json();
+
+            if (!response.ok || !resData.success) {
+                console.error('Failed to load itineraries:', resData.error);
+                if (itinerariesTableBody) {
+                    itinerariesTableBody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">Failed to load itineraries: ${escapeHtml(resData.error || 'Server error')}</td></tr>`;
+                }
+                return;
+            }
+
+            allItineraries = resData.data || [];
+            updateHistoryStats(allItineraries);
+            renderItinerariesTable();
+
+            // Auto-select latest itinerary if none selected or if previously selected is updated
+            if (allItineraries.length > 0) {
+                if (!selectedItinerary) {
+                    selectItinerary(allItineraries[0]);
+                } else {
+                    const updated = allItineraries.find(i => i.id === selectedItinerary.id || i.display_id === selectedItinerary.display_id);
+                    selectItinerary(updated || allItineraries[0]);
+                }
+            } else {
+                renderEmptyItinerariesState();
+            }
+
+        } catch (err) {
+            console.error('Error fetching itineraries history:', err);
+            if (itinerariesTableBody) {
+                itinerariesTableBody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">Error: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // Update Stats Summary
+    // --------------------------------------------------------------------------
+    function updateHistoryStats(itineraries) {
+        const total = itineraries.length;
+        if (navItineraryCount) navItineraryCount.textContent = total;
+        if (statTotalItineraries) statTotalItineraries.textContent = total;
+
+        const approved = itineraries.filter(i => i.budget_approved === true).length;
+        const overBudget = itineraries.filter(i => i.budget_approved === false).length;
+        const totalEvents = itineraries.reduce((sum, i) => sum + (i.event_count || (i.events ? i.events.length : 0)), 0);
+
+        if (statApprovedItineraries) statApprovedItineraries.textContent = approved;
+        if (statOverBudgetItineraries) statOverBudgetItineraries.textContent = overBudget;
+        if (statTotalEventsCount) statTotalEventsCount.textContent = totalEvents.toLocaleString();
+    }
+
+    // --------------------------------------------------------------------------
+    // Render Table 1: Created Itineraries
+    // --------------------------------------------------------------------------
+    function renderItinerariesTable() {
+        if (!itinerariesTableBody) return;
+
+        const searchTerm = (itinSearchInput ? itinSearchInput.value : '').toLowerCase().trim();
+        const statusFilter = (itinStatusFilter ? itinStatusFilter.value : 'all');
+
+        const filtered = allItineraries.filter(itin => {
+            // Search filter
+            const dest = (itin.destination || '').toLowerCase();
+            const orig = (itin.origin || '').toLowerCase();
+            const idStr = (itin.display_id || itin.id || '').toLowerCase();
+            const matchesSearch = !searchTerm || dest.includes(searchTerm) || orig.includes(searchTerm) || idStr.includes(searchTerm);
+
+            // Status filter
+            let matchesStatus = true;
+            if (statusFilter === 'approved') {
+                matchesStatus = itin.budget_approved === true;
+            } else if (statusFilter === 'over_budget') {
+                matchesStatus = itin.budget_approved === false;
+            } else if (statusFilter === 'fallback') {
+                matchesStatus = itin.status === 'Fallback';
+            }
+
+            return matchesSearch && matchesStatus;
+        });
+
+        if (visibleItinerariesCount) {
+            visibleItinerariesCount.textContent = filtered.length;
+        }
+
+        if (filtered.length === 0) {
+            itinerariesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-search"></i> No itineraries found matching the current filters.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        itinerariesTableBody.innerHTML = filtered.map(itin => {
+            const isSelected = selectedItinerary && (selectedItinerary.id === itin.id || selectedItinerary.display_id === itin.display_id);
+            const dateStr = formatDate(itin.start_time);
+            const budgetVal = itin.budget ? `$${parseFloat(itin.budget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+            const costVal = itin.total_estimated_cost ? `$${parseFloat(itin.total_estimated_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+            const evCount = itin.event_count || (itin.events ? itin.events.length : 0);
+
+            let statusBadge = '<span class="status-tag in-progress"><i class="fa-solid fa-spinner fa-spin"></i> In Progress</span>';
+            if (itin.status === 'Fallback') {
+                statusBadge = '<span class="status-tag fallback"><i class="fa-solid fa-shield-halved"></i> Fallback</span>';
+            } else if (itin.budget_approved === true) {
+                statusBadge = '<span class="status-tag approved"><i class="fa-solid fa-check"></i> Approved</span>';
+            } else if (itin.budget_approved === false) {
+                statusBadge = '<span class="status-tag over-budget"><i class="fa-solid fa-triangle-exclamation"></i> Over Budget</span>';
+            }
+
+            const originHtml = itin.origin ? `<div class="origin-sub"><i class="fa-solid fa-plane-departure"></i> ${escapeHtml(itin.origin)}</div>` : '<span class="text-muted">-</span>';
+
+            return `
+                <tr class="${isSelected ? 'selected-row' : ''}" data-id="${escapeHtml(itin.id || '')}">
+                    <td><span class="badge-code">${escapeHtml(itin.display_id || itin.id || 'ITIN')}</span></td>
+                    <td><span class="date-text"><i class="fa-regular fa-clock"></i> ${dateStr}</span></td>
+                    <td>
+                        <div class="dest-text">${escapeHtml(itin.destination || 'Unknown')}</div>
+                    </td>
+                    <td>${originHtml}</td>
+                    <td><strong>${itin.days || 1}</strong> days</td>
+                    <td><strong>${budgetVal}</strong></td>
+                    <td><strong>${costVal}</strong></td>
+                    <td>${statusBadge}</td>
+                    <td><span class="badge-code" style="color: var(--accent-emerald);">${evCount} evts</span></td>
+                    <td>
+                        <button class="btn-sm btn-outline select-itin-btn" data-id="${escapeHtml(itin.id || '')}">
+                            ${isSelected ? '<i class="fa-solid fa-circle-check"></i> Selected' : '<i class="fa-solid fa-arrow-right"></i> View'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Add Click Events to rows and buttons
+        itinerariesTableBody.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('click', (e) => {
+                const id = row.getAttribute('data-id');
+                const targetItin = allItineraries.find(i => (i.id === id || i.display_id === id));
+                if (targetItin) {
+                    selectItinerary(targetItin);
+                }
+            });
+        });
+    }
+
+    function renderEmptyItinerariesState() {
+        if (itinerariesTableBody) {
+            itinerariesTableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-4 text-muted">
+                        No itineraries have been generated yet. Go to <a href="#" id="linkGoToPlanner" style="color: var(--accent-cyan);">Trip Planner</a> to generate your first itinerary!
+                    </td>
+                </tr>
+            `;
+            const link = document.getElementById('linkGoToPlanner');
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('btnViewPlanner').click();
+                });
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // Select Itinerary & Populate Table 2
+    // --------------------------------------------------------------------------
+    function selectItinerary(itin) {
+        selectedItinerary = itin;
+
+        // Highlight selected row in Table 1
+        renderItinerariesTable();
+
+        // Update Metadata Bar in Table 2
+        if (selectedItinMetaBar) {
+            selectedItinMetaBar.style.display = 'flex';
+        }
+        if (selectedItinSubtitle) {
+            selectedItinSubtitle.textContent = `Displaying full generation stream for ${itin.destination} (${itin.display_id || itin.id})`;
+        }
+        if (selMetaDestination) {
+            selMetaDestination.textContent = `${itin.destination}${itin.origin ? ` (from ${itin.origin})` : ''} - ${itin.days || 1} Days`;
+        }
+        if (selMetaId) {
+            selMetaId.textContent = itin.display_id || itin.id;
+        }
+        if (selMetaBudget) {
+            selMetaBudget.textContent = itin.budget ? `$${parseFloat(itin.budget).toFixed(2)}` : '-';
+        }
+        if (selMetaCost) {
+            selMetaCost.textContent = itin.total_estimated_cost ? `$${parseFloat(itin.total_estimated_cost).toFixed(2)}` : '-';
+        }
+        if (selMetaStarted) {
+            selMetaStarted.textContent = formatDate(itin.start_time);
+        }
+
+        if (selMetaStatusBadge) {
+            if (itin.status === 'Fallback') {
+                selMetaStatusBadge.textContent = 'Fallback';
+                selMetaStatusBadge.className = 'metric-badge fallback';
+            } else if (itin.budget_approved === true) {
+                selMetaStatusBadge.textContent = 'Approved';
+                selMetaStatusBadge.className = 'metric-badge approved';
+            } else if (itin.budget_approved === false) {
+                selMetaStatusBadge.textContent = 'Over Budget';
+                selMetaStatusBadge.className = 'metric-badge over-budget';
+            } else {
+                selMetaStatusBadge.textContent = 'In Progress';
+                selMetaStatusBadge.className = 'metric-badge';
+            }
+        }
+
+        // Update Sub-Tab counts
+        updateEventCounts(itin.events || []);
+
+        // Render Events Table
+        renderEventsTable();
+
+        // Render Activity Logs Feed
+        renderSelectedItinLogs(itin);
+    }
+
+    // --------------------------------------------------------------------------
+    // Update Event Counts
+    // --------------------------------------------------------------------------
+    function updateEventCounts(events) {
+        const allCount = events.length;
+        const modelCount = events.filter(e => ['model_request', 'model_response'].includes(e.event_type)).length;
+        const toolCount = events.filter(e => ['tool_call', 'tool_invocation', 'tool_execution', 'tool_response', 'skill_invocation', 'skill_response'].includes(e.event_type)).length;
+        const pipeCount = events.filter(e => ['pipeline_start', 'pipeline_complete', 'pipeline_fallback'].includes(e.event_type)).length;
+
+        if (countAllEvents) countAllEvents.textContent = allCount;
+        if (countModelEvents) countModelEvents.textContent = modelCount;
+        if (countToolEvents) countToolEvents.textContent = toolCount;
+        if (countPipelineEvents) countPipelineEvents.textContent = pipeCount;
+    }
+
+    // --------------------------------------------------------------------------
+    // Render Table 2: Events Table
+    // --------------------------------------------------------------------------
+    function renderEventsTable() {
+        if (!selectedItinerary || !eventsTableBody) return;
+
+        const events = selectedItinerary.events || [];
+        const searchVal = currentEventSearch.toLowerCase().trim();
+
+        const filteredEvents = events.filter((ev, idx) => {
+            const etype = ev.event_type || '';
+            const agent = (ev.agent || '').toLowerCase();
+            const summary = (ev.summary || '').toLowerCase();
+            const detailsStr = JSON.stringify(ev.details || {}).toLowerCase();
+
+            // Sub-tab filter
+            let matchesTab = true;
+            if (currentEventFilter === 'models') {
+                matchesTab = ['model_request', 'model_response'].includes(etype);
+            } else if (currentEventFilter === 'tools') {
+                matchesTab = ['tool_call', 'tool_invocation', 'tool_execution', 'tool_response', 'skill_invocation', 'skill_response'].includes(etype);
+            } else if (currentEventFilter === 'pipeline') {
+                matchesTab = ['pipeline_start', 'pipeline_complete', 'pipeline_fallback'].includes(etype);
+            }
+
+            // Search filter
+            const matchesSearch = !searchVal || 
+                etype.includes(searchVal) || 
+                agent.includes(searchVal) || 
+                summary.includes(searchVal) || 
+                detailsStr.includes(searchVal);
+
+            return matchesTab && matchesSearch;
+        });
+
+        if (visibleEventsCount) {
+            visibleEventsCount.textContent = filteredEvents.length;
+        }
+
+        if (filteredEvents.length === 0) {
+            eventsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-filter"></i> No events found for the selected filter or search term.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        eventsTableBody.innerHTML = filteredEvents.map((ev, index) => {
+            const timeStr = formatEventTime(ev.timestamp);
+            const etype = ev.event_type || 'unknown';
+            const agent = ev.agent || 'System';
+            const summary = ev.summary || formatEventFallbackSummary(ev);
+
+            let agentIcon = 'fa-robot';
+            if (agent.includes('Flight')) agentIcon = 'fa-plane-departure';
+            else if (agent.includes('Hotel')) agentIcon = 'fa-hotel';
+            else if (agent.includes('Activity')) agentIcon = 'fa-map-location-dot';
+            else if (agent.includes('Scheduler')) agentIcon = 'fa-calendar-check';
+            else if (agent.includes('Budget')) agentIcon = 'fa-scale-balanced';
+            else if (agent === 'System') agentIcon = 'fa-gear';
+
+            return `
+                <tr data-event-index="${index}">
+                    <td><span class="badge-code">${index + 1}</span></td>
+                    <td><span class="date-text"><i class="fa-regular fa-clock"></i> ${timeStr}</span></td>
+                    <td>
+                        <span class="ev-type-badge ${escapeHtml(etype)}">
+                            ${escapeHtml(etype)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="agent-source-tag">
+                            <i class="fa-solid ${agentIcon}"></i>
+                            ${escapeHtml(agent)}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="event-summary-text">${escapeHtml(summary)}</div>
+                    </td>
+                    <td>
+                        <button class="btn-sm btn-outline inspect-event-btn" data-event-idx="${index}">
+                            <i class="fa-solid fa-code"></i> Payload
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Attach Payload Inspector Click Handlers
+        eventsTableBody.querySelectorAll('.inspect-event-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.getAttribute('data-event-idx'), 10);
+                const ev = filteredEvents[idx];
+                if (ev) {
+                    openPayloadModal(ev);
+                }
+            });
+        });
+    }
+
+    function formatEventFallbackSummary(ev) {
+        if (ev.details && ev.details.tool_name) {
+            return `Tool [${ev.details.tool_name}] interaction`;
+        }
+        return `Event ${ev.event_type} logged`;
+    }
+
+    // --------------------------------------------------------------------------
+    // Render Activity Logs Feed for Selected Itinerary
+    // --------------------------------------------------------------------------
+    function renderSelectedItinLogs(itin) {
+        if (!selectedItinLogsFeed) return;
+
+        const logs = itin.logs || [];
+        if (logs.length === 0) {
+            selectedItinLogsFeed.innerHTML = '<div class="log-line text-muted">No textual logs recorded for this itinerary run.</div>';
+            return;
+        }
+
+        selectedItinLogsFeed.innerHTML = logs.map(msg => {
+            const isHighlight = msg.includes('complete') || msg.includes('Starting') || msg.includes('Approved');
+            return `<div class="log-line ${isHighlight ? 'highlight' : ''}">${escapeHtml(msg)}</div>`;
+        }).join('');
+    }
+
+    // --------------------------------------------------------------------------
+    // Sub-Tab Filter Handling in Table 2
+    // --------------------------------------------------------------------------
+    if (eventFilterTabs) {
+        eventFilterTabs.querySelectorAll('.event-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                eventFilterTabs.querySelectorAll('.event-tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.getAttribute('data-filter');
+                currentEventFilter = filter;
+
+                if (filter === 'logs_feed') {
+                    if (eventsTableWrapper) eventsTableWrapper.style.display = 'none';
+                    if (eventsLogsFeedWrapper) eventsLogsFeedWrapper.style.display = 'block';
+                } else {
+                    if (eventsTableWrapper) eventsTableWrapper.style.display = 'block';
+                    if (eventsLogsFeedWrapper) eventsLogsFeedWrapper.style.display = 'none';
+                    renderEventsTable();
+                }
+            });
+        });
+    }
+
+    // Search and filter listeners
+    if (itinSearchInput) {
+        itinSearchInput.addEventListener('input', () => renderItinerariesTable());
+    }
+    if (itinStatusFilter) {
+        itinStatusFilter.addEventListener('change', () => renderItinerariesTable());
+    }
+    if (refreshHistoryBtn) {
+        refreshHistoryBtn.addEventListener('click', () => {
+            refreshHistoryBtn.querySelector('i').classList.add('fa-spin');
+            loadItinerariesHistory().finally(() => {
+                setTimeout(() => {
+                    refreshHistoryBtn.querySelector('i').classList.remove('fa-spin');
+                }, 500);
+            });
+        });
+    }
+    if (eventSearchInput) {
+        eventSearchInput.addEventListener('input', (e) => {
+            currentEventSearch = e.target.value;
+            renderEventsTable();
+        });
+    }
+
+    // --------------------------------------------------------------------------
+    // Payload Inspection Modal
+    // --------------------------------------------------------------------------
+    let currentModalPayload = null;
+
+    function openPayloadModal(eventObj) {
+        if (!payloadModal) return;
+        currentModalPayload = eventObj.raw_event || eventObj;
+
+        if (modalEventTitle) {
+            modalEventTitle.textContent = `Event: ${eventObj.event_type} (${eventObj.agent || 'System'})`;
+        }
+        if (modalPayloadMeta) {
+            modalPayloadMeta.innerHTML = `
+                <strong>Timestamp:</strong> ${formatDate(eventObj.timestamp)} | 
+                <strong>Type:</strong> <span class="ev-type-badge ${escapeHtml(eventObj.event_type)}">${escapeHtml(eventObj.event_type)}</span> | 
+                <strong>Agent:</strong> ${escapeHtml(eventObj.agent || 'System')}
+            `;
+        }
+        if (modalPayloadCode) {
+            modalPayloadCode.textContent = JSON.stringify(currentModalPayload, null, 2);
+        }
+
+        payloadModal.style.display = 'flex';
+    }
+
+    function closePayloadModal() {
+        if (payloadModal) {
+            payloadModal.style.display = 'none';
+        }
+    }
+
+    if (closePayloadModalBtn) closePayloadModalBtn.addEventListener('click', closePayloadModal);
+    if (closeModalActionBtn) closeModalActionBtn.addEventListener('click', closePayloadModal);
+    if (payloadModal) {
+        payloadModal.addEventListener('click', (e) => {
+            if (e.target === payloadModal) closePayloadModal();
+        });
+    }
+
+    if (copyPayloadBtn) {
+        copyPayloadBtn.addEventListener('click', () => {
+            if (!currentModalPayload) return;
+            navigator.clipboard.writeText(JSON.stringify(currentModalPayload, null, 2))
+                .then(() => {
+                    const original = copyPayloadBtn.innerHTML;
+                    copyPayloadBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => { copyPayloadBtn.innerHTML = original; }, 2000);
+                })
+                .catch(err => alert('Failed to copy: ' + err));
+        });
+    }
+
+    // Helper Date Formatters
+    function formatDate(isoStr) {
+        if (!isoStr) return '-';
+        try {
+            const d = new Date(isoStr);
+            return d.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch {
+            return String(isoStr).substring(0, 19);
+        }
+    }
+
+    function formatEventTime(isoStr) {
+        if (!isoStr) return '-';
+        try {
+            const d = new Date(isoStr);
+            return d.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            });
+        } catch {
+            return String(isoStr).substring(11, 23);
+        }
+    }
+
+    // Initial Load of History on Page Load
+    loadItinerariesHistory();
 
     // Utility: HTML Escaping
     function escapeHtml(str) {

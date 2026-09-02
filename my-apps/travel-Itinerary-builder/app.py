@@ -133,6 +133,49 @@ async def generate_itinerary():
         }), 500
 
 
+@app.route("/api/itineraries", methods=["GET"])
+def list_itineraries():
+    """Returns a list of all created itineraries and their event summaries."""
+    try:
+        from pipeline.event_logger import get_all_itineraries_with_events
+        itineraries = get_all_itineraries_with_events()
+        return jsonify({
+            "success": True,
+            "count": len(itineraries),
+            "data": itineraries
+        }), 200
+    except Exception as e:
+        logger.exception("Failed to retrieve itineraries: %s", e)
+        return jsonify({
+            "success": False,
+            "error": f"Failed to retrieve itineraries: {str(e)}"
+        }), 500
+
+
+@app.route("/api/itineraries/<itinerary_id>", methods=["GET"])
+def get_itinerary_details(itinerary_id: str):
+    """Returns the events and logs for a specific itinerary by ID."""
+    try:
+        from pipeline.event_logger import get_itinerary_by_id
+        itinerary = get_itinerary_by_id(itinerary_id)
+        if not itinerary:
+            return jsonify({
+                "success": False,
+                "error": f"Itinerary '{itinerary_id}' not found."
+            }), 404
+
+        return jsonify({
+            "success": True,
+            "data": itinerary
+        }), 200
+    except Exception as e:
+        logger.exception("Failed to retrieve itinerary %s: %s", itinerary_id, e)
+        return jsonify({
+            "success": False,
+            "error": f"Failed to retrieve itinerary: {str(e)}"
+        }), 500
+
+
 @app.route("/api/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
