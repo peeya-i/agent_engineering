@@ -2,3 +2,8 @@
 # Whole directory is ignored: it holds extracted ZIPs, virtualenvs, and .env
 # files containing real API keys. Nothing in here is course content.
 .testbed/
+
+# Ignore LibreOffice temp file
+**/.~*
+
+.DS_Store
