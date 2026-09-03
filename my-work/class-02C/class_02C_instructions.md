@@ -183,8 +183,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e .
-python -m pip install "google-adk[otel-gcp]==2.6.0"
 ```
+
+`pyproject.toml` already declares `google-adk[gcp,otel-gcp]==2.6.0`, so the
+editable install pulls the Google Cloud OpenTelemetry exporters with it. There is
+no second install step.
 
 Verify the installation:
 
@@ -192,6 +195,17 @@ Verify the installation:
 python -c "import google.adk; print('ADK', google.adk.__version__)"
 python scripts/validate_starter.py
 ```
+
+`validate_starter.py` exercises the package's `Graceful429Plugin` by handing it a
+synthetic quota error, so it prints a warning on the way to succeeding:
+
+```text
+WARNING:adk_multiagent_systems.shared.plugins:Model quota exhausted in plugin validation_plugin
+```
+
+That line is expected. No model was called and no quota was consumed — it is the
+fallback plugin proving it works. The run is successful when the last line reads
+`Validation passed. No model API call was made.`
 
 Verify that this is the completed golden application:
 
@@ -230,7 +244,12 @@ If those expectations are not met, stop. The ZIP contains the wrong source versi
 
 Choose **one** authentication mode.
 
-### Option A — Vertex AI
+### Option A — Vertex AI (now the Gemini Enterprise Agent Platform)
+
+Google renamed Vertex AI to the Gemini Enterprise Agent Platform in 2026, and the
+old name no longer appears in the Cloud console. The `GOOGLE_GENAI_USE_VERTEXAI`
+variable and the `aiplatform.googleapis.com` service are unchanged — only the
+product name moved.
 
 Set your Google Cloud project and authenticate:
 
@@ -249,12 +268,16 @@ cp .env.vertex.example .env
 nano .env
 ```
 
+Use `cp`, not `mv`. The `.example` templates are part of the golden source, and
+moving one makes `verify_golden_source.sh` fail with a misleading
+`No such file or directory` that looks like a corrupted download.
+
 Set these values in `.env`:
 
 ```dotenv
 GOOGLE_GENAI_USE_VERTEXAI=TRUE
 GOOGLE_CLOUD_PROJECT=replace_with_your_google_cloud_project_id
-GOOGLE_CLOUD_LOCATION=global
+GOOGLE_CLOUD_LOCATION=us-central1
 MODEL=gemini-2.5-flash
 ```
 
@@ -296,25 +319,58 @@ chmod 600 .env
 
 Never commit or share `.env`.
 
+### Choosing the model
+
+`MODEL` is read from `.env` by every agent in both applications, through
+`MODEL_NAME` in `adk_multiagent_systems/shared/runtime.py`:
+
+```python
+MODEL_NAME = os.getenv("MODEL", "gemini-2.5-flash")
+```
+
+It is optional — omit it and the application still runs on `gemini-2.5-flash`.
+Because it is an ordinary environment variable, you can also override it for a
+single run without editing `.env`:
+
+```bash
+MODEL=gemini-2.5-pro ./class-02C-work/start_web_server.sh
+```
+
+That makes a useful comparison once you reach Task 7: run the same pitch on two
+models and compare `gen_ai.usage.*` token counts and span durations in the two
+traces. Keep `gemini-2.5-flash` for your first pass through the lab.
+
 ---
 
 ## Task 3 — Prepare Google Cloud Trace
 
-Enable the required services:
+First check what is already enabled:
+
+```bash
+gcloud services list --enabled --project="$PROJECT_ID" \
+  | grep -E 'cloudtrace|logging|monitoring|aiplatform'
+```
+
+Managed classroom projects, Qwiklabs projects included, normally have all four
+enabled already. If all four are listed, continue to the credential check below.
+
+Only if something is missing, enable it:
 
 ```bash
 gcloud services enable \
   cloudtrace.googleapis.com \
   logging.googleapis.com \
   monitoring.googleapis.com \
+  aiplatform.googleapis.com \
   --project="$PROJECT_ID"
 ```
 
-If you selected Vertex AI, also enable:
-
-```bash
-gcloud services enable aiplatform.googleapis.com --project="$PROJECT_ID"
-```
+> **Expected in a classroom project.** `gcloud services enable` often fails in a
+> lab project with `FAILED_PRECONDITION: the terms of service 'cloud' ... must be
+> accepted` (`UREQ_TOS_NOT_ACCEPTED`), because a student account cannot accept
+> the Google Cloud terms of service. That error is harmless **as long as the
+> services are already enabled** — confirm with the `list --enabled` command
+> above and carry on.
 
 Confirm that Application Default Credentials work:
 
@@ -353,11 +409,39 @@ The helper:
 - loads `.env`;
 - sets `GOOGLE_CLOUD_PROJECT`;
 - labels the live service `class-02c-live`;
-- disables prompt and response content capture in telemetry;
+- sets the `gen_ai.*` OpenTelemetry attributes to capture no message content;
 - stores sessions in `class-02C-work/sessions.db`; and
 - starts `adk api_server` with `--otel_to_cloud` and `--no-reload` on port `8000`.
 
 `--no-reload` is used because auto-reload cannot be combined with an in-process application object; without it Uvicorn prints a warning and disables reload anyway.
+
+> **Read this before you start the server.** Your prompts and the model's replies
+> are sent to Google Cloud Trace. ADK has two independent content-capture
+> switches, and the helper sets only the first:
+>
+> | Variable | Governs | In this lab |
+> |---|---|---|
+> | `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT` | the `gen_ai.*` attributes | `NO_CONTENT` |
+> | `ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS` | ADK's own `gcp.vertex.agent.llm_request` and `llm_response` attributes | **left on deliberately** |
+>
+> The second is left on so you can see for yourself what telemetry really
+> captures; Task 7 asks you to go and find it. Until you turn it off, everything
+> you type and everything the model writes is readable in Cloud Trace by anyone
+> holding `roles/cloudtrace.user` on this project. Type nothing you would not
+> want stored there.
+
+The first time you run any `adk` command it asks whether to share usage
+telemetry with Google, and waits for an answer:
+
+```text
+Enable telemetry? [Y/n]:
+```
+
+Answer it, or settle it once before starting the server:
+
+```bash
+adk telemetry disable
+```
 
 Expected final line:
 
@@ -368,6 +452,38 @@ Uvicorn running on http://127.0.0.1:8000
 Leave Terminal 1 running.
 
 ADK's `--otel_to_cloud` option sends native OpenTelemetry data directly to Google Cloud Observability. It does not require a separate collector for this lab.
+
+Both start helpers read `GOOGLE_CLOUD_PROJECT` from `.env` after loading it, so a
+correctly filled `.env` is enough on its own; the `PROJECT_ID` export and the
+argument are optional overrides.
+
+### Optional — watch the agent work in the ADK web UI
+
+`start_web_server.sh` is `start_api_server.sh` with `adk web` in place of
+`adk api_server`. It serves the same REST API on the same port and writes to the
+same `sessions.db`, and adds a browser UI at <http://127.0.0.1:8000> with Trace,
+Events, State, Artifacts and Graph panels:
+
+```bash
+./class-02C-work/start_web_server.sh
+```
+
+Run one server or the other — both bind port 8000. The web UI is worth using
+once: its Trace panel shows the same span tree you are about to look for in
+Cloud Trace, and its Events panel shows the raw ADK Events you are about to
+record.
+
+If you drive the agent from the web UI, record that session rather than running
+the agent a second time:
+
+```bash
+./class-02C-work/record_session.sh
+```
+
+`record_session.sh` produces the same `events.jsonl` as `run_and_record.sh` but
+executes nothing: it fetches the newest session for `workflow_agents` and writes
+its event history. The web UI files sessions under user id `user`; pass
+`USER_ID=...` to override.
 
 ---
 
@@ -440,13 +556,27 @@ The two event counts should match and be greater than zero.
 
 In Google Cloud Console:
 
-1. select the project stored in `PROJECT_ID`;
-2. open **Trace Explorer** using the console search bar;
-3. set the time window to the last 30 minutes;
+1. select the project stored in `PROJECT_ID` in the console project picker;
+2. open **Observability → Trace → Trace explorer**, or type `Trace Explorer` into
+   the console search bar — the search bar survives console reorganisations;
+3. set the time window to the last 1 hour;
 4. set the trace scope to the current project if necessary;
-5. filter for service `class-02c-live`;
+5. in **Span filters**, tick **OpenTelemetry service** → `class-02c-live`;
 6. open the newest trace; and
-7. expand the span waterfall.
+7. switch the detail view from **Graph** to **Timeline**, then expand the waterfall.
+
+> **The Agent Platform console is the wrong place.** Agent Registry, Sessions
+> services, Deployments and Memory Bank list resources *deployed to* Agent
+> Platform. This lab runs ADK on your own machine, so those pages stay empty.
+> Only the OpenTelemetry spans leave your machine, and they arrive in Cloud
+> Trace.
+
+> **Filter before you read.** Unfiltered, most spans in the project are named `/`
+> with no service name — those are the web server's own HTTP spans. Filtering by
+> OpenTelemetry service removes them.
+
+**Timeline** shows duration and overlap; **Graph** shows call structure. Use
+Timeline for the questions below and Graph to see the topology.
 
 Find evidence of:
 
@@ -467,6 +597,33 @@ For three spans, record:
 | One tool or workflow span |  |  |  |  |
 
 Trace ingestion is asynchronous. A new project can take several minutes to show its first trace.
+
+### See what the telemetry captured
+
+Open any `call_llm` span and read its attributes. Beside the `gen_ai.*` metadata
+you will find two more:
+
+- `gcp.vertex.agent.llm_request` — the full system instruction and the entire
+  conversation history sent to the model, tool results included; and
+- `gcp.vertex.agent.llm_response` — the complete generated text.
+
+The `gen_ai.*` attributes carry only metadata — model name, finish reason, token
+counts — because the helper sets
+`OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=NO_CONTENT`. That variable
+has no authority over ADK's own attributes.
+
+Now turn the other switch off and watch the difference. Stop the server, then
+start it again with:
+
+```bash
+ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS=false ./class-02C-work/start_api_server.sh
+```
+
+Repeat Task 6, open the new trace, and confirm that both `gcp.vertex.agent.*`
+attributes now read `{}` while the token counts and model name are unchanged.
+
+Which setting would you choose for a production agent, and what would you give
+up either way?
 
 ---
 
@@ -572,6 +729,10 @@ Expected result:
 Replayed <N> events to Google Cloud Trace in project <PROJECT_ID>
 ```
 
+The replayer exits non-zero and prints `Export FAILED` if Cloud Trace rejects the
+spans, so a zero exit status means the trace genuinely arrived. Add `--debug` for
+the exporter's own diagnostics.
+
 The replay utility:
 
 - creates a new root span named `replay.adk.session`;
@@ -588,8 +749,8 @@ It does **not** import the agent application, call Gemini, invoke Wikipedia, exe
 
 Return to Trace Explorer:
 
-1. use the last 30 minutes as the time range;
-2. filter for service `class-02c-replay`;
+1. use the last 1 hour as the time range;
+2. in **Span filters**, tick **OpenTelemetry service** → `class-02c-replay`;
 3. open the newest `replay.adk.session` trace;
 4. inspect its child spans and `recorded.*` attributes; and
 5. compare it with the earlier `class-02c-live` trace.
@@ -605,8 +766,12 @@ Return to Trace Explorer:
 
 Answer these questions:
 
-1. Which live span consumed the most time?
-2. Where can you see the loop repeat?
+1. Which live span consumed the most time? Compare leaf spans, not parents — the
+   answer is rarely the stage you would guess.
+2. Find the `execute_tool exit_loop` span. What ended the loop, and how many
+   times did `researcher` → `screenwriter` → `critic` actually run? If the critic
+   approved on its first pass the loop ran once, and the trace shows you the
+   decision rather than the repetition.
 3. Where can you see parallel fan-out and join?
 4. Which ADK Events changed state?
 5. Why are the replay trace IDs and durations different?
@@ -651,7 +816,6 @@ source .venv/bin/activate
 which python
 which adk
 python -m pip install -e .
-python -m pip install "google-adk[otel-gcp]==2.6.0"
 ```
 
 ### `check_progress.py` reports `TODO`, or `rg` finds `TODO` markers
